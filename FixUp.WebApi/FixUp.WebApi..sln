@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36930.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixUp.WebApi.", "..\FixUp.WebApi\FixUp.WebApi\FixUp.WebApi..csproj", "{140AA38B-AA69-461D-95A8-345B60D89511}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixUpSolution", "..\FixUpSolution\FixUpSolution\FixUpSolution.csproj", "{57AA109F-D502-D2FD-249B-B79C53D8E17B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{140AA38B-AA69-461D-95A8-345B60D89511}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{140AA38B-AA69-461D-95A8-345B60D89511}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{140AA38B-AA69-461D-95A8-345B60D89511}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{140AA38B-AA69-461D-95A8-345B60D89511}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57AA109F-D502-D2FD-249B-B79C53D8E17B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57AA109F-D502-D2FD-249B-B79C53D8E17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57AA109F-D502-D2FD-249B-B79C53D8E17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57AA109F-D502-D2FD-249B-B79C53D8E17B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD6E6BAF-2DC9-45A9-A1AB-E3776260C66C}
+	EndGlobalSection
+EndGlobal
