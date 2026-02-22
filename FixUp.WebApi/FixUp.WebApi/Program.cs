@@ -1,4 +1,6 @@
 
+using FixUpSolution.Interfaces;
+using FixUpSolution.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace FixUp.WebApi_
@@ -11,7 +13,7 @@ namespace FixUp.WebApi_
             builder.Services.AddDbContext<FixUp.WebApi.Data.DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             // Add services to the container.
-
+            builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
