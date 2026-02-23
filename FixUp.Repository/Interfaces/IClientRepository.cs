@@ -1,6 +1,11 @@
-﻿namespace FixUp.Repository.Interfaces
+﻿using FixUpSolution.Models;
+
+namespace FixUp.Repository.Interfaces
 {
     public interface IClientRepository
     {
+        Task<Client> GetByIdAsync(int id);
+        Task<IEnumerable<Client>> GetAllAsync();
+        Task UpdateAsync(Client client);
     }
 }

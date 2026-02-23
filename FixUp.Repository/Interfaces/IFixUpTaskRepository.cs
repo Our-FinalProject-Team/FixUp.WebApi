@@ -9,4 +9,5 @@ namespace FixUp.Repository.Interfaces
         Task UpdateTaskAsync(FixUpTask task);
         Task DeleteTaskAsync(int id);
     }
+
 }

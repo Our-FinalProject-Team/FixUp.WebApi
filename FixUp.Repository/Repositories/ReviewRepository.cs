@@ -1,6 +1,38 @@
-﻿namespace FixUp.Repository.Repositories
+﻿using FixUp.Repository.Data;
+using FixUp.Repository.Interfaces;
+using FixUpSolution.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace FixUp.Repository.Repositories
 {
-    public class ReviewRepository
+    public class ReviewRepository : IReviewRepository
     {
+        private readonly DataContext _context;
+        public ReviewRepository(DataContext context) => _context = context;
+
+        public async Task<Review> GetByIdAsync(int id) => await _context.Reviews.FindAsync(id);
+
+        public async Task<IEnumerable<Review>> GetByProfessionalIdAsync(int profId)
+        {
+            return await _context.Reviews
+                .Where(r => r.ProfessionalId == profId)
+                .ToListAsync();
+        }
+
+        public async Task AddAsync(Review review)
+        {
+            await _context.Reviews.AddAsync(review);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var review = await _context.Reviews.FindAsync(id);
+            if (review != null)
+            {
+                _context.Reviews.Remove(review);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
