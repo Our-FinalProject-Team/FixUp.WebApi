@@ -1,6 +1,7 @@
+using FixUp.WebApi_;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FixUp.WebApi_.Controllers
+namespace FixUp.WebApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]

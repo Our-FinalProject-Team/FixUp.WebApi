@@ -1,14 +1,15 @@
-﻿using FixUp.WebApi.Data; // ודאי שה-Namespace כאן תקין לפי המקום שבו נמצא ה-DataContext
-using FixUpSolution.Interfaces;
+﻿using FixUp.Repository.Interfaces;
+using FixUp.Repository.Data; // ודאי שה-Namespace כאן תקין לפי המקום שבו נמצא ה-DataContext
+
 using FixUpSolution.Models;
 
-namespace FixUpSolution.Repositories
+namespace FixUp.Repository.Repositories
 {
-    public class ProfessionalRepository : IProfessionalRepository
+    public class ProfessionaRepository : IProfessionaRepository
     {
         private readonly DataContext _context;
 
-        public ProfessionalRepository(DataContext context)
+        public ProfessionaRepository(DataContext context)
         {
             _context = context;
         }

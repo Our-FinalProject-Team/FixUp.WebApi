@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using FixUpSolution.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -7,34 +6,35 @@ namespace FixUp.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProfessionalsController : ControllerBase
+    public class ClientsController : ControllerBase
     {
-        private static List<Professional> _professionals = new List<Professional>();
+        // GET: api/<ClientsController>
         [HttpGet]
-        public IEnumerable<Professional> Get()
+        public IEnumerable<string> Get()
         {
-            return _professionals;
+            return new string[] { "value1", "value2" };
         }
 
-        // GET api/<ProfessionalsController>/5
+        // GET api/<ClientsController>/5
         [HttpGet("{id}")]
         public string Get(int id)
         {
             return "value";
         }
 
+        // POST api/<ClientsController>
         [HttpPost]
-        public void Post([FromBody] Professional value)
+        public void Post([FromBody] string value)
         {
-            _professionals.Add(value);
         }
-        // PUT api/<ProfessionalsController>/5
+
+        // PUT api/<ClientsController>/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody] string value)
         {
         }
 
-        // DELETE api/<ProfessionalsController>/5
+        // DELETE api/<ClientsController>/5
         [HttpDelete("{id}")]
         public void Delete(int id)
         {

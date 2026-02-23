@@ -1,8 +1,7 @@
 ﻿using FixUpSolution.Models;
-
-namespace FixUpSolution.Interfaces
+namespace FixUp.Repository.Interfaces
 {
-    public interface IProfessionalRepository
+    public interface IProfessionaRepository
     {
         ICollection<Professional> GetProfessionals();
         Professional GetProfessional(int id);
