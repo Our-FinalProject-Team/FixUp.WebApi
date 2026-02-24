@@ -1,16 +1,17 @@
-﻿using FixUp.Repository.Interfaces;
-using FixUp.Repository.Data;
+﻿
+using FixUp.Repository.Interfaces;
 
-using FixUpSolution.Models;
+
+using FixUp.Repository.Models;
 using Microsoft.EntityFrameworkCore;
 namespace FixUp.Repository.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly DataContext _context;
+        private readonly IContext _context;
 
         // הזרקת הדאטה קונטקסט בבנאי
-        public UserRepository(DataContext context)
+        public UserRepository(IContext context)
         {
             _context = context;
         }

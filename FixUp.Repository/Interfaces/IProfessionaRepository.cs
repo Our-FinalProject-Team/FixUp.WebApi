@@ -1,4 +1,4 @@
-﻿using FixUpSolution.Models;
+﻿using FixUp.Repository.Models;
 namespace FixUp.Repository.Interfaces
 {
     public interface IProfessionaRepository

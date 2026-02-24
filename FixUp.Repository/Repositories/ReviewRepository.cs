@@ -1,14 +1,16 @@
-﻿using FixUp.Repository.Data;
+﻿
 using FixUp.Repository.Interfaces;
-using FixUpSolution.Models;
+
+using FixUp.Repository.Models; // כי כאן נמצאים עכשיו User, Client וכו'
+
 using Microsoft.EntityFrameworkCore;
 
 namespace FixUp.Repository.Repositories
 {
     public class ReviewRepository : IReviewRepository
     {
-        private readonly DataContext _context;
-        public ReviewRepository(DataContext context) => _context = context;
+        private readonly IContext _context;
+        public ReviewRepository(IContext context) => _context = context;
 
         public async Task<Review> GetByIdAsync(int id) => await _context.Reviews.FindAsync(id);
 

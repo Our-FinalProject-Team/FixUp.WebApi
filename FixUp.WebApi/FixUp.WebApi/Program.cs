@@ -1,12 +1,9 @@
-﻿
-
-
-
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using FixUp.Repository.Interfaces;
 using FixUp.Repository.Repositories;
-using FixUp.Repository.Data;
+
+using FixUp.Repository.Models;
+using FixUpSolution.Data;
 
 
 namespace FixUp.WebApi
@@ -16,7 +13,7 @@ namespace FixUp.WebApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddDbContext<DataContext>(options =>
+            builder.Services.AddDbContext<IContext,DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             // Add services to the container.
             builder.Services.AddScoped<IProfessionaRepository, ProfessionaRepository>();
@@ -43,7 +40,7 @@ namespace FixUp.WebApi
 
 
             app.MapControllers();
-            FixUpSolution.Models.Professional p = new FixUpSolution.Models.Professional();
+           FixUp.Repository.Models.Professional p = new FixUp.Repository.Models.Professional();
             app.Run();
         }
     }

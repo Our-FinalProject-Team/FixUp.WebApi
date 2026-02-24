@@ -1,4 +1,4 @@
-using FixUpSolution.Models;
+using FixUp.Repository.Models;
 namespace FixUp.WebApi_
 {
     public class WeatherForecast

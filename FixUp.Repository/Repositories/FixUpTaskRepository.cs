@@ -1,13 +1,14 @@
-﻿using FixUp.Repository.Data;
+﻿
 using FixUp.Repository.Interfaces;
-using FixUpSolution.Models;
+
+using FixUp.Repository.Models;
 using Microsoft.EntityFrameworkCore;
 namespace FixUp.Repository.Repositories
 {
     public class FixUpTaskRepository : IFixUpTaskRepository
     {
-        private readonly DataContext _context;
-        public FixUpTaskRepository(DataContext context) => _context = context;
+        private readonly IContext _context;
+        public FixUpTaskRepository(IContext context) => _context = context;
 
         public async Task<FixUpTask> GetByIdAsync(int id) =>
             await _context.Tasks.Include(t => t.Client).FirstOrDefaultAsync(t => t.Id == id);
@@ -16,7 +17,7 @@ namespace FixUp.Repository.Repositories
             await _context.Tasks.Where(t => t.ClientId == clientId).ToListAsync();
 
         public async Task<IEnumerable<FixUpTask>> GetPendingSOSAsync() =>
-            await _context.Tasks.Where(t => t.Type == TaskType.SOS && t.Status == TaskStatus.Pending).ToListAsync();
+            await _context.Tasks.Where(t => t.Type == TaskType.SOS && t.Status == FixUp.Repository.Models.TaskStatus.Pending).ToListAsync();
 
         public async Task AddAsync(FixUpTask task)
         {

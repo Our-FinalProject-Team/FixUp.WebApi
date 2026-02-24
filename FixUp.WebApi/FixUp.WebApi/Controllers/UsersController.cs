@@ -1,5 +1,5 @@
 ﻿using FixUp.Repository.Interfaces;
-using FixUpSolution.Models;
+using FixUp.Repository.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FixUp.WebApi.Controllers

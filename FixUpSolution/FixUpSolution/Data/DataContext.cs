@@ -1,9 +1,11 @@
-﻿using FixUpSolution.Models;
+﻿using FixUp.Repository.Interfaces;
+using FixUp.Repository.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace FixUp.Repository.Data
+
+namespace FixUpSolution.Data
 {
-    public class DataContext : DbContext
+    public class DataContext : DbContext,IContext
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
@@ -15,6 +17,11 @@ namespace FixUp.Repository.Data
         public DbSet<Professional> Professionals { get; set; }
         public DbSet<FixUpTask> Tasks { get; set; }
         public DbSet<Review> Reviews { get; set; }
+
+        public void save()
+        {
+            throw new NotImplementedException();
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

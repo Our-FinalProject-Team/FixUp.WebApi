@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FixUpSolution.Models
+namespace FixUp.Repository.Models
 {
     public class Review
     {
