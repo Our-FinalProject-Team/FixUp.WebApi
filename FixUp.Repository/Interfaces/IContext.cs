@@ -16,9 +16,9 @@ namespace FixUp.Repository.Interfaces
             DbSet<Professional> Professionals { get; set; }
             DbSet<FixUpTask> Tasks { get; set; }
             DbSet<Review> Reviews { get; set; }
+            DbSet<Category> Categories { get; set; }
 
-            // כאן אנחנו מגדירים את ה-SaveAsync כדי שיתאים גם ל-SQL
-            Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+           Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
             int SaveChanges();
         }
     }

@@ -17,6 +17,7 @@ namespace FixUpSolution.Data
         public DbSet<Professional> Professionals { get; set; }
         public DbSet<FixUpTask> Tasks { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         public void save()
         {

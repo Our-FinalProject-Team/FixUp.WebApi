@@ -14,7 +14,7 @@ namespace FixUp.WebApi
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddDbContext<IContext,DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             // Add services to the container.
             builder.Services.AddScoped<IProfessionaRepository, ProfessionaRepository>();
 
