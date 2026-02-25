@@ -1,44 +1,37 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
+using Microsoft.AspNetCore.Mvc;
 
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace FixUp.WebApi.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class ProfessionalsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProfessionalsController : ControllerBase
+    private readonly IProfessionalRepository _profRepo;
+
+    public ProfessionalsController(IProfessionalRepository profRepo)
     {
-        private static List<Professional> _professionals = new List<Professional>();
-        [HttpGet]
-        public IEnumerable<Professional> Get()
-        {
-            return _professionals;
-        }
+        _profRepo = profRepo;
+    }
 
-        // GET api/<ProfessionalsController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Professional>>> GetAll()
+    {
+        return Ok(await _profRepo.GetAllProfessionalsAsync());
+    }
 
-        [HttpPost]
-        public void Post([FromBody] Professional value)
-        {
-            _professionals.Add(value);
-        }
-        // PUT api/<ProfessionalsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Professional>> GetById(int id)
+    {
+        var prof = await _profRepo.GetProfessionalByIdAsync(id);
+        if (prof == null) return NotFound();
+        return Ok(prof);
+    }
 
-        // DELETE api/<ProfessionalsController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateProfessional(int id, Professional professional)
+    {
+        if (id != professional.Id) return BadRequest();
+        await _profRepo.UpdateProfessionalAsync(professional);
+        return NoContent();
     }
 }

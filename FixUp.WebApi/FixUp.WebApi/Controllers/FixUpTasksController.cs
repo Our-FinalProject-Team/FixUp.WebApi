@@ -1,43 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
-namespace FixUp.WebApi.Controllers
+namespace FixUp.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class FixUpTasksController : ControllerBase
     {
-        // GET: api/<FixUpTasksController>
+        private readonly IFixUpTaskRepository _taskRepo;
+
+        public FixUpTasksController(IFixUpTaskRepository taskRepo)
+        {
+            _taskRepo = taskRepo;
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<ActionResult<IEnumerable<FixUpTask>>> GetAll()
         {
-            return new string[] { "value1", "value2" };
+            var tasks = await _taskRepo.GetAllTasksAsync(); //
+            return Ok(tasks);
         }
 
-        // GET api/<FixUpTasksController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<ActionResult<FixUpTask>> GetById(int id)
         {
-            return "value";
+            var task = await _taskRepo.GetTaskByIdAsync(id); //
+            if (task == null) return NotFound();
+            return Ok(task);
         }
 
-        // POST api/<FixUpTasksController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> Create(FixUpTask task)
         {
+            await _taskRepo.AddTaskAsync(task); //
+            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
         }
 
-        // PUT api/<FixUpTasksController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Update(int id, FixUpTask task)
         {
+            if (id != task.Id) return BadRequest();
+            await _taskRepo.UpdateTaskAsync(task); //
+            return NoContent();
         }
 
-        // DELETE api/<FixUpTasksController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            await _taskRepo.DeleteTaskAsync(id); //
+            return NoContent();
         }
     }
 }

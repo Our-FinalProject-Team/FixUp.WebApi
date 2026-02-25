@@ -1,32 +1,28 @@
 ﻿
 using FixUp.Repository.Interfaces;
-
 using FixUp.Repository.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace FixUp.Repository.Repositories
 {
-    public class ProfessionaRepository : IProfessionaRepository
+    public class ProfessionalRepository : IProfessionalRepository
     {
         private readonly IContext _context;
+        public ProfessionalRepository(IContext context) => _context = context;
 
-        public ProfessionaRepository(IContext context)
-        {
-            _context = context;
-        }
+        public async Task<IEnumerable<Professional>> GetAllProfessionalsAsync() =>
+            await _context.Professionals.ToListAsync();
 
-        public ICollection<Professional> GetProfessionals()
-        {
-            return _context.Professionals.OrderBy(p => p.Id).ToList();
-        }
+        public async Task<Professional> GetProfessionalByIdAsync(int id) =>
+            await _context.Professionals.FindAsync(id);
 
-        public Professional GetProfessional(int id)
-        {
-            return _context.Professionals.Where(p => p.Id == id).FirstOrDefault();
-        }
+        public async Task<bool> ProfessionalExistsAsync(int id) =>
+            await _context.Professionals.AnyAsync(p => p.Id == id);
 
-        public bool ProfessionalExists(int id)
+        public async Task UpdateProfessionalAsync(Professional professional)
         {
-            return _context.Professionals.Any(p => p.Id == id);
+            _context.Professionals.Update(professional);
+            await _context.SaveChangesAsync();
         }
     }
 }

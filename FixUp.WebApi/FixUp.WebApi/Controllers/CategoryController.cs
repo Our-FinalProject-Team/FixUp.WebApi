@@ -1,43 +1,28 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FixUp.Repository.Interfaces;
+using FixUp.Repository.Models;
+using Microsoft.AspNetCore.Mvc;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace FixUp.WebApi.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class CategoriesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CategoryController : ControllerBase
+    private readonly ICategoryRepository _categoryRepo;
+
+    public CategoriesController(ICategoryRepository categoryRepo)
     {
-        // GET: api/<CategoryController>
-        [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
+        _categoryRepo = categoryRepo;
+    }
 
-        // GET api/<CategoryController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+    {
+        return Ok(await _categoryRepo.GetAllCategoriesAsync());
+    }
 
-        // POST api/<CategoryController>
-        [HttpPost]
-        public void Post([FromBody]string value)
-        {
-        }
-
-        // PUT api/<CategoryController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/<CategoryController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    [HttpPost]
+    public async Task<IActionResult> Add(Category category)
+    {
+        await _categoryRepo.AddCategoryAsync(category);
+        return CreatedAtAction(nameof(GetCategories), new { id = category.Id }, category);
     }
 }
