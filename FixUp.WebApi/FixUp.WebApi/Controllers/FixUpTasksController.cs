@@ -1,32 +1,45 @@
 ﻿using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using FixUp.Repository.Models;
+// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
-[ApiController]
-[Route("api/[controller]")]
-public class FixUpTasksController : ControllerBase
+namespace FixUp.WebApi.Controllers
 {
-    private readonly IFixUpTaskService _taskService;
-
-    public FixUpTasksController(IFixUpTaskService taskService)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FixUpTasksController : ControllerBase
     {
-        _taskService = taskService;
-    }
+        // GET: api/<FixUpTasksController>
+        [HttpGet]
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "value1", "value2" };
+        }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<FixUpTaskDto>>> GetAll() => Ok(await _taskService.GetAllAsync());
+        // GET api/<FixUpTasksController>/5
+        [HttpGet("{id}")]
+        public string Get(int id)
+        {
+            return "value";
+        }
 
-    [HttpPost]
-    public async Task<ActionResult> Create(FixUpTaskDto taskDto)
-    {
-        await _taskService.AddAsync(taskDto);
-        return CreatedAtAction(nameof(GetAll), new { id = taskDto.Id }, taskDto);
-    }
+        // POST api/<FixUpTasksController>
+        [HttpPost]
+        public void Post([FromBody] string value)
+        {
+        }
 
-    [HttpGet("calculate-price/{id}")]
-    public async Task<ActionResult<double>> GetPrice(int id)
-    {
-        var price = await _taskService.CalculateFinalPrice(id);
-        return Ok(price);
+        // PUT api/<FixUpTasksController>/5
+        [HttpPut("{id}")]
+        public void Put(int id, [FromBody] string value)
+        {
+        }
+
+        // DELETE api/<FixUpTasksController>/5
+        [HttpDelete("{id}")]
+        public void Delete(int id)
+        {
+        }
     }
 }
