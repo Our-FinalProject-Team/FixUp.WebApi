@@ -1,43 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FixUp.Repository.Models;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using FixUp.Service.Dto;
+using FixUp.Service.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
-namespace FixUp.WebApi.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class FixUpTasksController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class FixUpTasksController : ControllerBase
+    private readonly IFixUpTaskService _taskService;
+
+    public FixUpTasksController(IFixUpTaskService taskService)
     {
-        // GET: api/<FixUpTasksController>
-        [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
+        _taskService = taskService;
+    }
 
-        // GET api/<FixUpTasksController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<FixUpTaskDto>>> GetAll() => Ok(await _taskService.GetAllAsync());
 
-        // POST api/<FixUpTasksController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
+    [HttpPost]
+    public async Task<ActionResult> Create(FixUpTaskDto taskDto)
+    {
+        await _taskService.AddAsync(taskDto);
+        return CreatedAtAction(nameof(GetAll), new { id = taskDto.Id }, taskDto);
+    }
 
-        // PUT api/<FixUpTasksController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<FixUpTasksController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    [HttpGet("calculate-price/{id}")]
+    public async Task<ActionResult<double>> GetPrice(int id)
+    {
+        var price = await _taskService.CalculateFinalPrice(id);
+        return Ok(price);
     }
 }

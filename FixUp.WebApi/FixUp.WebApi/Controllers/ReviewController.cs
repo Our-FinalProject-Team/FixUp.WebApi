@@ -1,43 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.AspNetCore.Mvc;
 
-namespace FixUp.WebApi.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class ReviewsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ReviewController : ControllerBase
+    private readonly IReviewRepository _reviewRepo;
+
+    public ReviewsController(IReviewRepository reviewRepo)
     {
-        // GET: api/<ReviewController>
-        [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
+        _reviewRepo = reviewRepo;
+    }
 
-        // GET api/<ReviewController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+    [HttpGet("professional/{profId}")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetByProfessional(int profId)
+    {
+        var reviews = await _reviewRepo.GetReviewsByProfessionalIdAsync(profId);
+        return Ok(reviews);
+    }
 
-        // POST api/<ReviewController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<ReviewController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<ReviewController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    [HttpPost]
+    public async Task<IActionResult> PostReview(Review review)
+    {
+        await _reviewRepo.AddReviewAsync(review);
+        return Ok(review);
     }
 }

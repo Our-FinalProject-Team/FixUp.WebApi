@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixUpSolution", "..\FixUpSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixUp.Repository", "..\FixUp.Repository\FixUp.Repository.csproj", "{93AACA34-9E57-40E0-B474-BC1F6DCC5509}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixUp.Service", "..\FixUp.Service\FixUp.Service.csproj", "{9079E533-53E1-4046-99EE-60E79D03DCDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{93AACA34-9E57-40E0-B474-BC1F6DCC5509}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93AACA34-9E57-40E0-B474-BC1F6DCC5509}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93AACA34-9E57-40E0-B474-BC1F6DCC5509}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9079E533-53E1-4046-99EE-60E79D03DCDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9079E533-53E1-4046-99EE-60E79D03DCDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9079E533-53E1-4046-99EE-60E79D03DCDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9079E533-53E1-4046-99EE-60E79D03DCDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,43 +1,28 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using FixUp.Repository.Interfaces;
+using FixUp.Repository.Models;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace FixUp.WebApi.Controllers
+namespace FixUp.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class ClientsController : ControllerBase
     {
-        // GET: api/<ClientsController>
+        private readonly IClientRepository _clientRepo;
+
+        public ClientsController(IClientRepository clientRepo)
+        {
+            _clientRepo = clientRepo;
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
+        public async Task<ActionResult<IEnumerable<Client>>> GetAll() => Ok(await _clientRepo.GetAllClientsAsync());
 
-        // GET api/<ClientsController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<ActionResult<Client>> GetById(int id)
         {
-            return "value";
-        }
-
-        // POST api/<ClientsController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<ClientsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<ClientsController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            var client = await _clientRepo.GetClientByIdAsync(id);
+            return client == null ? NotFound() : Ok(client);
         }
     }
 }

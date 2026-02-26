@@ -1,69 +1,84 @@
-﻿using FixUp.Repository.Interfaces;
-using FixUp.Repository.Models;
+﻿using FixUp.Service.Interfaces;
+using FixUp.Service.Dto;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FixUp.WebApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // הכתובת תהיה api/users
+    [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserService _userService;
 
-        // כאן אנחנו מזריקים את האינטרפייס (ולא את הריפוזיטורי ישירות!)
-        public UsersController(IUserRepository userRepository)
+        public UsersController(IUserService userService)
         {
-            _userRepository = userRepository;
+            _userService = userService;
         }
 
-        // 1. קבלת כל המשתמשים
+        // 1. קבלת כל המשתמשים (משתמש בפונקציה הגנרית מה-Base)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetAll()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
         {
-            var users = await _userRepository.GetAllUsersAsync();
-            return Ok(users); // מחזיר קוד 200 עם רשימת המשתמשים
+            var users = await _userService.GetAllAsync();
+            return Ok(users);
         }
 
-        // 2. קבלת משתמש ספציפי לפי ID
+        // 2. קבלת משתמש לפי ID (משתמש בפונקציה הגנרית מה-Base)
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetById(int id)
+        public async Task<ActionResult<UserDto>> GetById(int id)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var userDto = await _userService.GetByIdAsync(id);
+            if (userDto == null)
+            {
+                return NotFound("משתמש לא נמצא");
+            }
+            return Ok(userDto);
+        }
+
+        // 3. רישום משתמש חדש (פונקציה ספציפית ב-IUserService שמקבלת סיסמה)
+        [HttpPost("register")]
+        public async Task<ActionResult> Register(UserDto userDto, string password)
+        {
+            await _userService.AddAsync(userDto);
+            return CreatedAtAction(nameof(GetById), new { id = userDto.Id }, userDto);
+        }
+
+        // 4. התחברות - Login (הפונקציה המיוחדת שהוספנו)
+        [HttpPost("login")]
+        public async Task<ActionResult<UserDto>> Login(UserLoginDto loginDto)
+        {
+            var user = await _userService.Authenticate(loginDto);
+
             if (user == null)
             {
-                return NotFound("משתמש לא נמצא"); // קוד 404
+                return Unauthorized("שם משתמש או סיסמה שגויים");
             }
+
             return Ok(user);
         }
 
-        // 3. יצירת משתמש חדש
-        [HttpPost]
-        public async Task<ActionResult> Create(User user)
-        {
-            await _userRepository.AddUserAsync(user);
-            // מחזיר קוד 201 ומראה איפה אפשר למצוא את המשאב החדש
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
-        }
-
-        // 4. עדכון משתמש
+        // 5. עדכון משתמש (גנרי)
         [HttpPut("{id}")]
-        public async Task<ActionResult> Update(int id, User user)
+        public async Task<ActionResult> Update(int id, UserDto userDto)
         {
-            if (id != user.Id)
-            {
-                return BadRequest("ה-ID לא תואם");
-            }
-
-            await _userRepository.UpdateUserAsync(user);
-            return NoContent(); // קוד 204 - הצלחתי ואין לי מה להוסיף
+            await _userService.UpdateAsync(id, userDto);
+            return NoContent();
         }
 
-        // 5. מחיקת משתמש
+        // 6. מחיקת משתמש (גנרי)
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
-            await _userRepository.DeleteUserAsync(id);
-            return Ok("המשתמש נמחק בהצלחה");
+            await _userService.DeleteAsync(id);
+            return NoContent();
+        }
+        // יצירת משתמש חדש - שימוש ב-RegisterAsync
+        [HttpPost("register")]
+        public async Task<ActionResult> RegisterAsync(UserDto userDto, string password)
+        {
+            // הסרוויס יטפל בהצמדת הסיסמה למודל לפני השמירה
+            await _userService.RegisterAsync(userDto, password);
+            return CreatedAtAction(nameof(GetById), new { id = userDto.Id }, userDto);
         }
     }
 }

@@ -1,11 +1,12 @@
 ﻿using FixUp.Repository.Models;
+
 namespace FixUp.Repository.Interfaces
 {
-    public interface IProfessionaRepository
+    public interface IProfessionalRepository
     {
-        ICollection<Professional> GetProfessionals();
-        Professional GetProfessional(int id);
-        bool ProfessionalExists(int id);
-        // בהמשך נוסיף כאן גם Create, Update ו-Delete
+        Task<IEnumerable<Professional>> GetAllProfessionalsAsync();
+        Task<Professional> GetProfessionalByIdAsync(int id);
+        Task<bool> ProfessionalExistsAsync(int id);
+        Task UpdateProfessionalAsync(Professional professional);
     }
 }

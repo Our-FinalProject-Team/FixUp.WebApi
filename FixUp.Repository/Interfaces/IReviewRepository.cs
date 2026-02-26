@@ -4,9 +4,9 @@ namespace FixUp.Repository.Interfaces
 {
     public interface IReviewRepository
     {
-        Task<Review> GetByIdAsync(int id);
-        Task<IEnumerable<Review>> GetByProfessionalIdAsync(int profId);
-        Task AddAsync(Review review);
-        Task DeleteAsync(int id);
+        Task<Review> GetReviewByIdAsync(int id);
+        Task<IEnumerable<Review>> GetReviewsByProfessionalIdAsync(int profId);
+        Task AddReviewAsync(Review review);
+        Task DeleteReviewAsync(int id);
     }
 }
