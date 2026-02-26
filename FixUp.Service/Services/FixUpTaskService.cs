@@ -64,4 +64,9 @@ public class FixUpTaskService : IFixUpTaskService
     {
         throw new NotImplementedException();
     }
+
+    public Task AddAsync(FixUpTaskDto item)
+    {
+        throw new NotImplementedException();
+    }
 }
