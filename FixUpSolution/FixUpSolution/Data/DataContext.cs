@@ -18,10 +18,10 @@ namespace FixUpSolution.Data
         public DbSet<FixUpTask> Tasks { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Category> Categories { get; set; }
-
+        public DbSet<Request> Requests { get; set; }
         public void save()
         {
-            throw new NotImplementedException();
+            this.SaveChanges(); 
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

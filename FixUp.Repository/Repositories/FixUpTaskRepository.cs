@@ -36,14 +36,7 @@ namespace FixUp.Repository.Repositories
                 .ToListAsync();
         }
 
-        // שליפת משימות SOS שממתינות
-        public async Task<IEnumerable<FixUpTask>> GetPendingSOSTasksAsync()
-        {
-            return await _context.Tasks
-                .Where(t => t.Type == TaskType.SOS &&
-                            t.Status == FixUp.Repository.Models.TaskStatus.Pending)
-                .ToListAsync();
-        }
+       
 
         // הוספת משימה חדשה
         public async Task AddTaskAsync(FixUpTask task)
@@ -68,6 +61,11 @@ namespace FixUp.Repository.Repositories
                 _context.Tasks.Remove(task);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public Task<IEnumerable<FixUpTask>> GetPendingSOSTasksAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

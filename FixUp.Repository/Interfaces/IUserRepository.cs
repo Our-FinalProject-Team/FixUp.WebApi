@@ -10,5 +10,6 @@ namespace FixUp.Repository.Interfaces
         Task AddUserAsync(User user);
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int id);
+        Task<User> GetByEmailAsync(string email);
     }
 }

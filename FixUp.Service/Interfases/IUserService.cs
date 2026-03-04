@@ -7,4 +7,6 @@ using System.Threading.Tasks;
 
 public interface IUserService : IService<UserDto>
 {
+    Task<UserDto> Authenticate(UserLoginDto loginDto);
+    Task RegisterAsync(UserDto userDto, string password);
 }

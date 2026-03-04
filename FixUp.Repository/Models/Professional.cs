@@ -14,10 +14,7 @@ namespace FixUp.Repository.Models
         public double AverageRating { get; set; }
         public int TotalReviews { get; set; }
 
-        // שדות ה-SOS הקריטיים:
-        public bool IsActiveNow { get; set; } // האם הוא זמין לקבל SOS ברגע זה?
-        public double CurrentLat { get; set; } // קואורדינטות בזמן אמת
-        public double CurrentLng { get; set; }
+      
 
         public List<Review> Reviews { get; set; } // רשימת חוות הדעת עליו
         public double BaseHourlyRate { get; set; } // מחיר לשעה בשגרה

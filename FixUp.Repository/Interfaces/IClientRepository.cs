@@ -1,11 +1,10 @@
 ﻿using FixUp.Repository.Models;
 
-namespace FixUp.Repository.Interfaces
+public interface IClientRepository
 {
-    public interface IClientRepository
-    {
-        Task<IEnumerable<Client>> GetAllClientsAsync();
-        Task<Client> GetClientByIdAsync(int id);
-        Task UpdateClientAsync(Client client);
-    }
+    Task<IEnumerable<Client>> GetAllClientsAsync();
+    Task<Client> GetClientByIdAsync(int id);
+    Task AddClientAsync(Client client); // נוסף
+    Task UpdateClientAsync(Client client);
+    Task DeleteClientAsync(int id);     // נוסף
 }

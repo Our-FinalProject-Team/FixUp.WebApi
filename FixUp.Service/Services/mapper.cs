@@ -21,6 +21,9 @@ namespace FixUp.Service.Services
 
             // אם יש לך עוד טבלאות כמו Review, פשוט הוסיפי שורה כזו לכל אחת
             CreateMap<Review, ReviewDto>().ReverseMap();
+            
+            CreateMap<RequestCreateDto, Request>(); // מיצירה למודל
+            CreateMap<Request, RequestDisplayDto>(); // מהמודל לתצוגה
         }
     }
 }

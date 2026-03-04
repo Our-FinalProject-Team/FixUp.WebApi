@@ -15,6 +15,7 @@ namespace FixUp.Repository.Models
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsDeleted { get; set; } = false;
 
     }
 }

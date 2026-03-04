@@ -3,70 +3,51 @@ using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-public class FixUpTaskService : IFixUpTaskService
+namespace FixUp.Service.Services
 {
-    private readonly IFixUpTaskRepository _repository;
-    private readonly IMapper _mapper;
-
-    public FixUpTaskService(IFixUpTaskRepository repository, IMapper mapper)
+    public class FixUpTaskService : IFixUpTaskService
     {
-        _repository = repository;
-        _mapper = mapper;
-    }
+        private readonly IFixUpTaskRepository _repository;
+        private readonly IMapper _mapper;
 
-    public async Task<IEnumerable<FixUpTaskDto>> GetAllAsync()
-    {
-        var tasks = await _repository.GetAllTasksAsync();
-        return _mapper.Map<IEnumerable<FixUpTaskDto>>(tasks);
-    }
+        public FixUpTaskService(IFixUpTaskRepository repository, IMapper mapper)
+        {
+            _repository = repository;
+            _mapper = mapper;
+        }
 
-    public async Task<FixUpTaskDto> GetByIdAsync(int id)
-    {
-        var task = await _repository.GetTaskByIdAsync(id);
-        return _mapper.Map<FixUpTaskDto>(task);
-    }
+        public async Task<IEnumerable<FixUpTaskDto>> GetAllAsync() =>
+            _mapper.Map<IEnumerable<FixUpTaskDto>>(await _repository.GetAllTasksAsync());
 
-    public async Task AddItem(FixUpTaskDto item)
-    {
-        var model = _mapper.Map<FixUpTask>(item);
-        // לוגיקה: אם סוג המשימה הוא SOS, התאריך המתוכנן הוא עכשיו
-        if (model.Type == TaskType.SOS) model.ScheduledDate = DateTime.Now;
-        await _repository.AddTaskAsync(model);
-    }
+        public async Task<FixUpTaskDto> GetByIdAsync(int id) =>
+            _mapper.Map<FixUpTaskDto>(await _repository.GetTaskByIdAsync(id));
 
-    public async Task<double> CalculateFinalPrice(int taskId)
-    {
-        var task = await _repository.GetTaskByIdAsync(taskId);
-        // כאן תבוא לוגיקה של מחיר בסיס + תוספת SOS
-        return task.PriceEstimate * 1.2;
-    }
+        // מימוש AddAsync מה-IService (במקום AddItem)
+        public async Task AddAsync(FixUpTaskDto item)
+        {
+            var model = _mapper.Map<FixUpTask>(item);
+            if (model.ScheduledDate == default) model.ScheduledDate = DateTime.Now;
+            await _repository.AddTaskAsync(model);
+        }
 
-    public async Task UpdateItem(int id, FixUpTaskDto item) { /* מימוש */ }
-    public async Task DeleteItem(int id) { /* מימוש */ }
+        public async Task UpdateAsync(int id, FixUpTaskDto item)
+        {
+            var task = await _repository.GetTaskByIdAsync(id);
+            if (task != null)
+            {
+                _mapper.Map(item, task);
+                await _repository.UpdateTaskAsync(task);
+            }
+        }
 
-    public Task AddAsync(FixUpTaskDto item, string password)
-    {
-        throw new NotImplementedException();
-    }
+        public async Task DeleteAsync(int id) => await _repository.DeleteTaskAsync(id);
 
-    public Task UpdateAsync(int id, FixUpTaskDto item)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteAsync(int id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task AddAsync(FixUpTaskDto item)
-    {
-        throw new NotImplementedException();
+        public async Task<double> CalculateFinalPrice(int taskId)
+        {
+            var task = await _repository.GetTaskByIdAsync(taskId);
+            // לוגיקה נקייה: פשוט מחזיר את הערכת המחיר (בלי תוספת SOS)
+            return task.PriceEstimate;
+        }
     }
 }

@@ -4,7 +4,6 @@ using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 
-
 namespace FixUp.Service.Services
 {
     public class UserService : IUserService
@@ -18,75 +17,51 @@ namespace FixUp.Service.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
+        // 1. מימוש פונקציית האימות (Login)
+        public async Task<UserDto> Authenticate(UserLoginDto loginDto)
         {
-            var users = await _userRepository.GetAllUsersAsync();
-            // המרה מרשימת User לרשימת UserDto
-            return _mapper.Map<IEnumerable<UserDto>>(users);
+            var user = await _userRepository.GetByEmailAsync(loginDto.Email);
+            if (user == null || user.PasswordHash != loginDto.Password) return null;
+            return _mapper.Map<UserDto>(user);
         }
 
-        public async Task<UserDto> GetUserByIdAsync(int id)
+        // 2. מימוש קבלת משתמש לפי ID
+        public async Task<UserDto> GetByIdAsync(int id)
         {
             var user = await _userRepository.GetUserByIdAsync(id);
             return _mapper.Map<UserDto>(user);
         }
 
-        public async Task AddUserAsync(UserDto userDto, string password)
+        // 3. מימוש קבלת כל המשתמשים
+        public async Task<IEnumerable<UserDto>> GetAllAsync()
         {
-            // --- לוגיקה עסקית / חישוב ---
-            if (password.Length < 6)
-            {
-                throw new Exception("הסיסמה חייבת להיות לפחות 6 תווים");
-            }
-
-            // הופכים את ה-DTO למודל אמיתי כדי לשמור במסד
-            var userModel = _mapper.Map<User>(userDto);
-
-            // מעדכנים את הסיסמה (שלא הייתה ב-DTO)
-            userModel.PasswordHash = password;
-
-            await _userRepository.AddUserAsync(userModel);
+            var users = await _userRepository.GetAllUsersAsync();
+            return _mapper.Map<IEnumerable<UserDto>>(users);
         }
 
-        public Task<UserDto> Authenticate(UserLoginDto loginDto)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<UserDto>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<UserDto> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddAsync(UserDto item, string password)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateAsync(int id, UserDto item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
+        // 4. רישום משתמש חדש
         public async Task RegisterAsync(UserDto userDto, string password)
         {
             var userModel = _mapper.Map<User>(userDto);
-            userModel.PasswordHash = password; // או Password לפי השדה שלך
+            userModel.PasswordHash = password;
             await _userRepository.AddUserAsync(userModel);
             userDto.Id = userModel.Id;
         }
 
-        // מימוש ריק או בסיסי ל-AddAsync הגנרי אם צריך
-        public Task AddAsync(UserDto item) => throw new NotImplementedException("Use RegisterAsync for users");
+        // 5. מחיקת משתמש
+        public async Task DeleteAsync(int id)
+        {
+            await _userRepository.DeleteUserAsync(id);
+        }
+
+        // פונקציות עזר קיימות
+        public async Task<IEnumerable<UserDto>> GetAllUsersAsync() => await GetAllAsync();
+        public async Task<UserDto> GetUserByIdAsync(int id) => await GetByIdAsync(id);
+        public async Task AddUserAsync(UserDto userDto, string password) => await RegisterAsync(userDto, password);
+
+        // מימוש חובה לממשק אם קיים
+        public Task UpdateAsync(int id, UserDto item) => throw new NotImplementedException("Update logic not yet implemented");
+        public Task AddAsync(UserDto item) => throw new NotImplementedException("Use RegisterAsync");
+        public Task AddAsync(UserDto item, string password) => RegisterAsync(item, password);
     }
 }

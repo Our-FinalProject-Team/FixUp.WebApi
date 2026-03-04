@@ -1,8 +1,6 @@
 ﻿using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using FixUp.Repository.Models;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace FixUp.WebApi.Controllers
 {
@@ -10,36 +8,44 @@ namespace FixUp.WebApi.Controllers
     [ApiController]
     public class FixUpTasksController : ControllerBase
     {
-        // GET: api/<FixUpTasksController>
+        private readonly IFixUpTaskService _taskService;
+
+        public FixUpTasksController(IFixUpTaskService taskService)
+        {
+            _taskService = taskService;
+        }
+
+        // GET: api/FixUpTasks
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<ActionResult<IEnumerable<FixUpTaskDto>>> Get()
         {
-            return new string[] { "value1", "value2" };
+            return Ok(await _taskService.GetAllAsync());
         }
 
-        // GET api/<FixUpTasksController>/5
+        // GET: api/FixUpTasks/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<ActionResult<FixUpTaskDto>> Get(int id)
         {
-            return "value";
+            var task = await _taskService.GetByIdAsync(id);
+            if (task == null) return NotFound();
+            return Ok(task);
         }
 
-        // POST api/<FixUpTasksController>
+        // POST: api/FixUpTasks
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> Post([FromBody] FixUpTaskDto taskDto)
         {
+            // שימי לב: כאן משתמשים ב-AddAsync הכללי מה-IService
+            await _taskService.AddAsync(taskDto);
+            return Ok("המשימה נוצרה בהצלחה");
         }
 
-        // PUT api/<FixUpTasksController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        // GET: api/FixUpTasks/price/5 (פונקציה ייחודית מ-IFixUpTaskService)
+        [HttpGet("price/{id}")]
+        public async Task<ActionResult<double>> GetFinalPrice(int id)
         {
-        }
-
-        // DELETE api/<FixUpTasksController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            var price = await _taskService.CalculateFinalPrice(id);
+            return Ok(price);
         }
     }
 }

@@ -2,6 +2,7 @@
 using FixUp.Repository.Models;
 using FixUp.Repository.Repositories;
 using FixUp.Service.Interfaces;
+using FixUp.Service.Interfases;
 using FixUp.Service.Services;
 using FixUpSolution.Data;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<IContext, DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
+// --- הזרקות ה-Services (התוספת החדשה) ---
+builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
+builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+//builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+// הזרקת AutoMapper - חובה כדי שהמרות יעבדו
+builder.Services.AddAutoMapper(typeof(MyMapper));
+
+
+
 // 4. רישום ה-Repositories (Dependency Injection)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
@@ -27,7 +41,8 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IFixUpTaskRepository, FixUpTaskRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-
+builder.Services.AddScoped<IRequestRepository, RequestRepository>();
+builder.Services.AddScoped<IRequestService, RequestService>();
 var app = builder.Build();
 
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
@@ -48,18 +63,5 @@ app.Run(); // הרצה אחת בלבד בסוף
 
 
 
-// Services
-builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
-//builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
-//builder.Services.AddScoped<IClientService, ClientService>();
-//builder.Services.AddScoped<IReviewService, ReviewService>();
 
-// --- הזרקות ה-Services (התוספת החדשה) ---
-builder.Services.AddScoped<IUserService, UserService>();
-
-// הזרקת AutoMapper - חובה כדי שהמרות יעבדו
-builder.Services.AddAutoMapper(typeof(MyMapper));
-
-builder.Services.AddControllers();
 //builder.Services.AddAutoMapper(typeof(MappingProfile));
-//builder.Services.AddScoped<IUserService, UserService>();

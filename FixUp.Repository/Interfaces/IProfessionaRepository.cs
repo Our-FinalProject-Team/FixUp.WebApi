@@ -8,5 +8,8 @@ namespace FixUp.Repository.Interfaces
         Task<Professional> GetProfessionalByIdAsync(int id);
         Task<bool> ProfessionalExistsAsync(int id);
         Task UpdateProfessionalAsync(Professional professional);
+        Task AddProfessionalAsync(Professional professional);
+        Task DeleteProfessionalAsync(int id);
+        Task<bool> EmailExistsAsync (string email);
     }
 }

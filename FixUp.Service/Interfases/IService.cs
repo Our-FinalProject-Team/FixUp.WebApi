@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-public interface IService<T> where T : class
+public interface IService<T> 
 {
     Task<IEnumerable<T>> GetAllAsync();
     Task<T> GetByIdAsync(int id);

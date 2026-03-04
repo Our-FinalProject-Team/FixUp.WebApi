@@ -17,7 +17,8 @@ namespace FixUp.Repository.Interfaces
             DbSet<FixUpTask> Tasks { get; set; }
             DbSet<Review> Reviews { get; set; }
             DbSet<Category> Categories { get; set; }
-
+            DbSet<Request> Requests {  get; set; }
+        
            Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
             int SaveChanges();
         }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FixUp.Repository.Models
 {
-    public enum TaskType { Maintenance, SOS }
+    //public enum TaskType { Maintenance }
     public enum TaskStatus { Pending, InProgress, Completed, Cancelled }
 
     public class FixUpTask
@@ -14,26 +14,15 @@ namespace FixUp.Repository.Models
         public int Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-
-        // הגדרת סוג המשימה - כאן נכנס ה-SOS!
-        public TaskType Type { get; set; }
         public TaskStatus Status { get; set; }
-
-        public DateTime? ScheduledDate { get; set; } // null אם זה SOS מיידי
+        public DateTime ScheduledDate { get; set; } // חובה, לא Nullable
         public double PriceEstimate { get; set; }
+        public double FinalPrice { get; set; }
+        public string PriceNegotiationStatus { get; set; }
 
-        // קשרים
         public int ClientId { get; set; }
         public Client Client { get; set; }
-
         public int? ProfessionalId { get; set; }
         public Professional Professional { get; set; }
-
-        // מיקום המשימה (לצורך חישוב מרחק ל-Professional הקרוב ביותר)
-        public double LocationLat { get; set; }
-        public double LocationLng { get; set; }
-        public double FinalPrice { get; set; }     // המחיר שנסגר בסוף
-        public string PriceNegotiationStatus { get; set; } // "Proposed", "Accepted", "Paid"
-
     }
 }

@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace FixUp.Service.Dto
 {
-    public class ClientDto
+    public class ClientDto : UserDto
     {
+        // כאן יבואו שדות שייחודיים רק ללקוח, למשל:
+         public List<FixUpTaskDto> MyRequests { get; set; }
     }
 }
