@@ -7,5 +7,6 @@ namespace FixUp.Service.Interfaces
         Task RegisterClientAsync(ClientDto clientDto, string password);
         // הוספת פונקציית התחברות
         Task<ClientDto> LoginAsync(string email, string password);
+        Task<bool> UpdatePasswordAsync(string email, string newPassword);
     }
 }

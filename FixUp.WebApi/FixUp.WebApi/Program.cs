@@ -43,8 +43,14 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-var app = builder.Build();
 
+// הוספת מדיניות CORS
+
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+var app = builder.Build();
+app.UseCors("AllowAll");
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
 if (app.Environment.IsDevelopment())
 {

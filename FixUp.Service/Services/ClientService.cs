@@ -78,5 +78,26 @@ namespace FixUp.Service.Services
 
             return _mapper.Map<ClientDto>(client);
         }
+        public async Task<bool> UpdatePasswordAsync(string email, string newPassword)
+        {
+            // 1. שליפת המשתמש מה-Repository (כאן הוא מכיר את IsDeleted ו-PasswordHash)
+            // אנחנו משתמשים במודל User כפי שמופיע ב-FixUp.Repository.Models
+            var allEntities = await _clientRepo.GetAllClientsAsync();
+            var user = allEntities.FirstOrDefault(u =>
+                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.IsDeleted == false); // כאן IsDeleted יעבוד כי זו הישות מה-Repo
+
+            if (user == null) return false;
+
+            // 2. עדכון הסיסמה בתוך האובייקט
+            // שימי לב: השדה במודל שלך הוא PasswordHash
+            user.PasswordHash = newPassword;
+
+            // 3. קריאה לפונקציית העדכון שנמצאת ב-Repository
+            // לפי מה שכתבת, היא מקבלת את האובייקט המלא
+            await _clientRepo.UpdateClientAsync(user);
+
+            return true;
+        }
     }
 }

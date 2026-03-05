@@ -81,5 +81,23 @@ namespace FixUp.WebApi.Controllers
 
             return Ok(prof);
         }
+        [HttpPut("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string newPassword)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(newPassword))
+            {
+                return BadRequest("אימייל וסיסמה הם שדות חובה");
+            }
+
+            var success = await _profService.UpdatePasswordAsync(email, newPassword);
+
+            if (!success)
+            {
+                // כאן נכנס העניין של ה-IsDeleted - אם המשתמש מחוק או לא קיים
+                return NotFound("לא נמצא משתמש פעיל עם כתובת האימייל הזו");
+            }
+
+            return Ok("הסיסמה עודכנה בהצלחה");
+        }
     }
 }

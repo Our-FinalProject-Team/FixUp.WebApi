@@ -77,7 +77,25 @@ namespace FixUp.Service.Services
 
             return _mapper.Map<ProfessionalDto>(prof);
         }
+        public async Task<bool> UpdatePasswordAsync(string email, string newPassword)
+        {
+            // חיפוש המשתמש דרך ה-Repository כדי לקבל את הישות המלאה (Entity)
+            var allProfessionals = await _professionalRepository.GetAllProfessionalsAsync();
 
+            // כאן IsDeleted יעבוד כי זו הישות מה-DB ולא ה-Dto
+            var pro = allProfessionals.FirstOrDefault(p =>
+                p.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                p.IsDeleted == false);
 
+            if (pro == null) return false;
+
+            // עדכון השדה הנכון מהמודל שלך
+            pro.PasswordHash = newPassword;
+
+            // שליחת האובייקט המלא לפונקציה הקיימת ב-Repository
+            await _professionalRepository.UpdateProfessionalAsync(pro);
+
+            return true;
+        }
     }
 }
