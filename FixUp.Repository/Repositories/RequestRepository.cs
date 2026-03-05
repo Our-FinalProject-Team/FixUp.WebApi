@@ -49,6 +49,22 @@ namespace FixUp.Repository.Repositories
                 _context.Requests.Remove(request);
                 await _context.SaveChangesAsync();
             }
-        }
+             }
+            public async Task ReleaseRequestsByProfessionalIdAsync(int profId)
+            {
+            // שליפת כל הבקשות שתפוסות על ידי בעל המקצוע הזה
+            var requestsToRelease = await _context.Requests
+                .Where(r => r.ProfessionalId == profId)
+                .ToListAsync();
+
+            foreach (var request in requestsToRelease)
+            {
+                request.ProfessionalId = null; // שחרור הבקשה
+                request.Status = "ממתין";      // החזרה למצב זמין בלוח
+            }
+
+            await _context.SaveChangesAsync();
+             }
     }
+    
 }

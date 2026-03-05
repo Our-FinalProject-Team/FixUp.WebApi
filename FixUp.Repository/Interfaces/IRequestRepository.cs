@@ -15,5 +15,6 @@ namespace FixUp.Repository.Interfaces
         Task<Request> AddAsync(Request request);
         Task UpdateAsync(Request request);
         Task DeleteAsync(int id);
+        Task ReleaseRequestsByProfessionalIdAsync(int profId);
     }
 }
