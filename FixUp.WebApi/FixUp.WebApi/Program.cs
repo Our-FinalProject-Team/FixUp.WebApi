@@ -43,7 +43,9 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 // הוספת מדיניות CORS
 
 builder.Services.AddCors(options => {
