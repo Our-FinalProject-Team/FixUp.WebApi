@@ -48,39 +48,44 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 // הוספת מדיניות CORS
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowReact", policy => {
-        policy.WithOrigins("http://localhost:5173") // או הכתובת של ה-React שלך (בדקי בדפדפן)
+// --- חלק השירותים (לפני ה-Build) ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SignalRPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // זה מה שחסר כדי ש-SignalR יעבוד!
+              .AllowCredentials();
     });
 });
 
-
 builder.Services.AddSignalR();
+builder.Services.AddControllers();
 
 var app = builder.Build();
-app.UseCors("AllowAll");
-// 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
+
+// --- חלק ה-Pipeline (סדר הפעולות) ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(); // כאן יופיע הממשק הגרפי
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+
+// הוספת UseRouting - חשוב מאוד כדי שה-CORS ידע לאן הבקשה הולכת
+app.UseRouting();
+
+// ה-CORS חייב לבוא אחרי ה-Routing ולפני ה-Authorization
+app.UseCors("SignalRPolicy");
+
 app.UseAuthorization();
 
+// חיבור ה-Hubs והקונטרולרים
 app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
+app.MapControllers();
 
-app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
+app.Run();
 
-app.Run(); // הרצה אחת בלבד בסוף
-
-
-
-
-
-
-//builder.Services.AddAutoMapper(typeof(MappingProfile));
