@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 
     
-namespace YourProjectName.Models
-    {
+namespace YourProjectName.Models {
         public class Message
         {
             public int Id { get; set; }
@@ -20,5 +19,5 @@ namespace YourProjectName.Models
             public int CategoryId { get; set; }
             public string? ImageUrl { get; set; } // סימן שאלה כי לא חובה להעלות תמונה בכל הודעה
         }
-    }
+}
 

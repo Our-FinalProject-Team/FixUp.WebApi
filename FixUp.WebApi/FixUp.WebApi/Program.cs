@@ -51,6 +51,9 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
+
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 app.UseCors("AllowAll");
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
@@ -62,6 +65,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
 
 app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
 

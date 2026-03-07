@@ -14,5 +14,6 @@ namespace FixUp.Service.DTOs
         public string SenderName { get; set; }
         public string SenderRole { get; set; }
         public int CategoryId { get; set; }
+        public string? ImageUrl { get; set; } 
     }
 }

@@ -7,72 +7,122 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
 using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
 using YourProjectName.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace FixUp.Service.Services
 {
-    public class MessageService : IMessageService
-    {
-        private readonly IChatRepository _repository;
-
-        public MessageService(IChatRepository repository)
+    
+        public class MessageService : IMessageService
         {
-            _repository = repository;
-        }
+            private readonly IChatRepository _repository;
+            //IConfiguration   זהו ממשק של מיקרוסופט
+            // שיודע לקרוא נתונים מקובץ appsettings.json 
+            //ומבצע שינויים באופן דינאמי
+            private readonly IConfiguration _configuration;
 
-        public async Task<IEnumerable<MessageDTO>> GetAllAsync()
-        {
-            var messages = await _repository.GetAllMessagesAsync();
-            return messages.Select(m => new MessageDTO
+            public MessageService(IChatRepository repository, IConfiguration configuration)
             {
-                Id = m.Id,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                SenderId = m.SenderId,
-                SenderName = m.SenderName,
-                SenderRole = m.SenderRole,
-                CategoryId = m.CategoryId
-            });
-        }
+                _repository = repository;
+                _configuration = configuration;
+            }
 
-        public async Task AddAsync(MessageDTO item)
-        {
-            var model = new Message
+            /// <summary>
+            /// סורק את תוכן ההודעה ומזהה את הקטגוריה המקצועית המתאימה 
+            /// על בסיס מילות מפתח ב-4 שפות מתוך קובץ ההגדרות.
+            /// </summary>
+            /// <param name="content">תוכן ההודעה שנשלחה מהלקוח</param>
+            /// <returns>מזהה קטגוריה (ID) או 0 אם לא נמצאה התאמה</returns>
+            public int DetectCategoryId(string content)
             {
-                Content = item.Content,
-                CreatedAt = DateTime.Now,
-                SenderId = item.SenderId,
-                SenderName = item.SenderName,
-                SenderRole = item.SenderRole,
-                CategoryId = item.CategoryId
-            };
-            await _repository.AddMessageAsync(model);
-        }
+                if (string.IsNullOrWhiteSpace(content)) return 0;
 
-        public async Task<IEnumerable<MessageDTO>> GetByCategoryIdAsync(int categoryId)
-        {
-            var messages = await _repository.GetMessagesByCategoryAsync(categoryId);
+                // ניקוי סימני פיסוק לזיהוי מדויק יותר
+                string cleanContent = new string(content.Where(c => !char.IsPunctuation(c)).ToArray());
 
-            // אם המערך חוזר ריק, סימן שב-DB אין הודעות עם CategoryId = 3
-            return messages.Select(m => new MessageDTO
+                //העברה למילון כדי שיהיה נוח לעבור על הנתונים
+                //במילון המפתח הוא הקטגוריה
+                //הערך זה מילון שבתוכו יש שפה ורשימה של מילים בשפה הזו שקשורים לקטגוריה
+                //
+                var categories = new Dictionary<string, Dictionary<string, List<string>>>();
+                _configuration.GetSection("ProfessionalSettings:Categories").Bind(categories);
+
+                if (categories == null) return 0;
+
+                foreach (var categoryEntry in categories)
+                {
+                    foreach (var languageEntry in categoryEntry.Value)
+                    {
+                        // דילוג על שדה ה-Name ב-JSON שאינו רשימת מילים
+                        if (languageEntry.Key == "Name") continue;
+
+                        if (languageEntry.Value.Any(word => cleanContent.Contains(word, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            return int.Parse(categoryEntry.Key);
+                        }
+                    }
+                }
+                return 0;
+            }
+
+            public async Task AddAsync(MessageDTO item)
             {
-                Id = m.Id,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                SenderName = m.SenderName,
-                SenderRole = m.SenderRole,
-                CategoryId = m.CategoryId
-            });
-        }
+                int detectedId = DetectCategoryId(item.Content);
 
-        // מימוש שאר הפונקציות של IService (אפשר להשאיר ריק או לזרוק NotImplEx)
-        public Task<MessageDTO> GetByIdAsync(int id) => throw new NotImplementedException();
-        public Task UpdateAsync(int id, MessageDTO item) => throw new NotImplementedException();
-        public Task DeleteAsync(int id) => throw new NotImplementedException();
-    }
+                var model = new Message
+                {
+                    Content = item.Content,
+                    CreatedAt = DateTime.Now,
+                    SenderId = item.SenderId,
+                    SenderName = item.SenderName,
+                    SenderRole = item.SenderRole,
+                    // השמה של הקטגוריה שזוהתה או מה שנשלח במקור
+                    CategoryId = detectedId != 0 ? detectedId : item.CategoryId,
+                    ImageUrl = item.ImageUrl
+                };
+
+                await _repository.AddMessageAsync(model);
+            }
+
+            public async Task<IEnumerable<MessageDTO>> GetAllAsync()
+            {
+                var messages = await _repository.GetAllMessagesAsync();
+                return messages.Select(m => new MessageDTO
+                {
+                    Id = m.Id,
+                    Content = m.Content,
+                    CreatedAt = m.CreatedAt,
+                    SenderId = m.SenderId,
+                    SenderName = m.SenderName,
+                    SenderRole = m.SenderRole,
+                    CategoryId = m.CategoryId,
+                    ImageUrl = m.ImageUrl
+                });
+            }
+
+            public async Task<IEnumerable<MessageDTO>> GetByCategoryIdAsync(int categoryId)
+            {
+                var messages = await _repository.GetMessagesByCategoryAsync(categoryId);
+                return messages.Select(m => new MessageDTO
+                {
+                    Id = m.Id,
+                    Content = m.Content,
+                    CreatedAt = m.CreatedAt,
+                    SenderName = m.SenderName,
+                    SenderRole = m.SenderRole,
+                    CategoryId = m.CategoryId
+                });
+            }
+
+            // מימושים ריקים לבינתיים
+            public Task<MessageDTO> GetByIdAsync(int id) => throw new NotImplementedException();
+            public Task UpdateAsync(int id, MessageDTO item) => throw new NotImplementedException();
+            public Task DeleteAsync(int id) => throw new NotImplementedException();
+        }
+    
+
 }
