@@ -49,8 +49,14 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 // הוספת מדיניות CORS
 
 builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowReact", policy => {
+        policy.WithOrigins("http://localhost:5173") // או הכתובת של ה-React שלך (בדקי בדפדפן)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // זה מה שחסר כדי ש-SignalR יעבוד!
+    });
 });
+
 
 builder.Services.AddSignalR();
 
