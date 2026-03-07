@@ -19,7 +19,9 @@ builder.Services.AddSwaggerGen();
 
 // 3. חיבור ל-SQL (לפי הקוד שלך)
 builder.Services.AddDbContext<IContext, DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    sqlOptions => sqlOptions.EnableRetryOnFailure())
+);
 
 
 // --- הזרקות ה-Services (התוספת החדשה) ---
@@ -72,7 +74,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 
 // הוספת UseRouting - חשוב מאוד כדי שה-CORS ידע לאן הבקשה הולכת
@@ -89,7 +91,3 @@ app.MapControllers();
 
 app.Run();
 
-
-
-
-//builder.Services.AddAutoMapper(typeof(MappingProfile));

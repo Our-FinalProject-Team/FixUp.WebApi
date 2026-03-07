@@ -1,40 +1,42 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
-using FixUp.Service.DTOs;
+using FixUp.WebAPI.Hubs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace FixUp.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class MessageController : ControllerBase
+    [Route("api/[controller]")]
+    public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IHubContext<ChatHub> _hubContext; // הוספת ה-Hub
 
-        public MessageController(IMessageService messageService)
+        public MessagesController(IMessageService messageService, IHubContext<ChatHub> hubContext)
         {
             _messageService = messageService;
+            _hubContext = hubContext;
         }
 
-        // שליפת כל ההודעות (לפי הממשק הכללי IService)
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetAll()
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
         {
-            var messages = await _messageService.GetAllAsync();
-            return Ok(messages);
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return Ok(new { url = $"https://localhost:7230/images/{fileName}" });
         }
 
-        // שליפת היסטוריית הודעות לפי קטגוריה (פורום ספציפי)
-        [HttpGet("category/{categoryId}")]
-        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetByCategoryId(int categoryId)
-        {
-            var messages = await _messageService.GetByCategoryIdAsync(categoryId);
-            return Ok(messages);
-        }
-
-        // שליחת הודעה חדשה
         [HttpPost("send")]
+        
         public async Task<IActionResult> SendMessage([FromBody] MessageDTO messageDto)
         {
             if (messageDto == null || string.IsNullOrEmpty(messageDto.Content))
@@ -42,8 +44,26 @@ namespace FixUp.WebAPI.Controllers
                 return BadRequest("תוכן ההודעה לא יכול להיות ריק");
             }
 
+            // 1. שמירה במסד הנתונים
             await _messageService.AddAsync(messageDto);
-            return Ok(new { message = "ההודעה נשלחה בהצלחה" });
+
+            // 2. הפצת ההודעה המקורית לכל מי שמחובר (בזמן אמת)
+            await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
+
+            // 3. יצירת תגובה אוטומטית (בוט)
+            var autoReply = new MessageDTO
+            {
+                Content = "קיבלנו את הודעתך, נחזור אליך בהקדם!",
+                SenderName = "מערכת FixUp",
+                CreatedAt = DateTime.Now,
+                // ודאי שה-SenderId כאן שונה מה-ID של המשתמש כדי שהבועה תהיה בצד השני
+                SenderId = 0
+            };
+
+            // שליחת התגובה האוטומטית לכולם
+            await _hubContext.Clients.All.SendAsync("ReceiveMessage", autoReply);
+
+            return Ok(new { status = "Success" });
         }
     }
 }
