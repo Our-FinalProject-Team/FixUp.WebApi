@@ -1,6 +1,6 @@
 ﻿using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
-using FixUp.Service.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -12,6 +12,7 @@ public class ClientsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+
     [HttpGet("{id}")]
     public async Task<ActionResult<ClientDto>> GetById(int id)
     {
@@ -19,71 +20,40 @@ public class ClientsController : ControllerBase
         if (client == null) return NotFound("הלקוח לא נמצא");
         return Ok(client);
     }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] ClientDto dto, [FromQuery] string password)
     {
         await _service.RegisterClientAsync(dto, password);
         return Ok("הלקוח נרשם בהצלחה");
     }
-    // DELETE: api/Clients/5
+
+    [Authorize(Roles = "Client")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        // 1. בודקים אם הוא קיים (ופעיל) לפני שמנסים למחוק
         var client = await _service.GetByIdAsync(id);
-        if (client == null)
-        {
-            return NotFound("הלקוח לא נמצא או שכבר נמחק בעבר");
-        }
-
-        // 2. קוראים לסרוויס שיבצע "מחיקה לוגית" (עדכון הבוליאני)
+        if (client == null) return NotFound("הלקוח לא נמצא");
         await _service.DeleteAsync(id);
-
-        return NoContent(); // מחזירים הצלחה בלי תוכן
-    }
-    // עדכון פרטי לקוח
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] ClientDto dto)
-    {
-        var existingClient = await _service.GetByIdAsync(id);
-        if (existingClient == null)
-        {
-            return NotFound("הלקוח לא נמצא או שהוא מחוק");
-        }
-
-        await _service.UpdateAsync(id, dto);
         return NoContent();
     }
 
-    // התחברות לקוח
-    [HttpPost("login")]
-    public async Task<ActionResult<ClientDto>> Login([FromQuery] string email, [FromQuery] string password)
+    [Authorize(Roles = "Client")]
+    [HttpPut("update-my-profile")]
+    public async Task<IActionResult> UpdateMyProfile([FromBody] ClientDto dto)
     {
-        var client = await _service.LoginAsync(email, password);
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (string.IsNullOrEmpty(email)) return Unauthorized("לא נמצא זיהוי לקוח בטוקן");
 
-        if (client == null)
-        {
-            return Unauthorized("אימייל או סיסמה שגויים, או שהלקוח אינו פעיל");
-        }
-
-        return Ok(client);
+        await _service.UpdateByEmailAsync(email, dto);
+        return NoContent();
     }
-    [HttpPut("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string newPassword)
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
     {
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(newPassword))
-        {
-            return BadRequest("אימייל וסיסמה הם שדות חובה");
-        }
-
-        var success = await _service.UpdatePasswordAsync(email, newPassword);
-
-        if (!success)
-        {
-            // כאן נכנס העניין של ה-IsDeleted - אם המשתמש מחוק או לא קיים
-            return NotFound("לא נמצא משתמש פעיל עם כתובת האימייל הזו");
-        }
-
-        return Ok("הסיסמה עודכנה בהצלחה");
+        var response = await _service.LoginAsync(email, password);
+        if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
+        return Ok(response);
     }
 }

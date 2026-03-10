@@ -6,7 +6,8 @@ namespace FixUp.Service.Interfaces
     {
         Task RegisterProfessionalAsync(ProfessionalDto profDto, string password);
         // הוספת פונקציית התחברות
-        Task<ProfessionalDto> LoginAsync(string email, string password);
+        Task<AuthResponseDto> LoginAsync(string email, string password);
         Task<bool> UpdatePasswordAsync(string email, string newPassword);
+        Task UpdateByEmailAsync(string email, ProfessionalDto item);
     }
 }

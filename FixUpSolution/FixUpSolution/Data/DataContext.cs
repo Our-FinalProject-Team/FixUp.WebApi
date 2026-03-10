@@ -1,6 +1,8 @@
 ﻿using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
+
 using Microsoft.EntityFrameworkCore;
+using YourProjectName.Models;
 
 
 namespace FixUpSolution.Data
@@ -19,6 +21,9 @@ namespace FixUpSolution.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Request> Requests { get; set; }
+        public DbSet<Message> Messages { get ; set ; }
+       
+
         public void save()
         {
             this.SaveChanges(); 

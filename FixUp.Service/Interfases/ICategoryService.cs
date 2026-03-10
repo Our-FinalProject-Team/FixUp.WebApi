@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FixUp.Service.Interfases
+using FixUp.Service.DTOs;
+
+namespace FixUp.Service.Interfaces
 {
-    internal interface ICategoryService
+    public interface ICategoryService : IService<CategoryDTO>
     {
+        // כאן ניתן להוסיף פונקציות ספציפיות לקטגוריות אם תרצי בעתיד
     }
 }

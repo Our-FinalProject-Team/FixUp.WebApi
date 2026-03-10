@@ -1,5 +1,6 @@
 ﻿using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FixUp.WebApi.Controllers
@@ -15,15 +16,9 @@ namespace FixUp.WebApi.Controllers
             _profService = profService;
         }
 
-        // GET: api/Professionals (מגיע מ-IService)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProfessionalDto>>> GetAll()
-        {
-            var professionals = await _profService.GetAllAsync();
-            return Ok(professionals);
-        }
+        public async Task<ActionResult<IEnumerable<ProfessionalDto>>> GetAll() => Ok(await _profService.GetAllAsync());
 
-        // GET: api/Professionals/5 (מגיע מ-IService)
         [HttpGet("{id}")]
         public async Task<ActionResult<ProfessionalDto>> GetById(int id)
         {
@@ -32,71 +27,48 @@ namespace FixUp.WebApi.Controllers
             return Ok(prof);
         }
 
-        // POST: api/Professionals/register (פונקציה ייחודית)
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] ProfessionalDto profDto, [FromQuery] string password)
         {
-            try
-            {
-                await _profService.RegisterProfessionalAsync(profDto, password);
-                return Ok("איש המקצוע נרשם בהצלחה במערכת");
-            }
-            catch (Exception ex)
-            {
-                // מחזיר את ההודעה שכתבנו ב-Service (כמו "חסר @")
-                return BadRequest(ex.Message);
-            }
+            // אין צורך ב-try-catch! אם תהיה שגיאה, ה-Middleware יתפוס אותה ויחזיר BadRequest מסודר
+            await _profService.RegisterProfessionalAsync(profDto, password);
+            return Ok("איש המקצוע נרשם בהצלחה במערכת");
         }
 
-        // PUT: api/Professionals/5 (מגיע מ-IService)
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] ProfessionalDto profDto)
+        [Authorize(Roles = "Professional")]
+        [HttpPut("update-my-profile")]
+        public async Task<IActionResult> UpdateMyProfile([FromBody] ProfessionalDto profDto)
         {
-            await _profService.UpdateAsync(id, profDto);
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email)) return Unauthorized("לא נמצא זיהוי משתמש בטוקן");
+
+            await _profService.UpdateByEmailAsync(email, profDto);
             return NoContent();
         }
 
-        // DELETE: api/Professionals/5 (מגיע מ-IService)
-       
+        [Authorize(Roles = "Professional")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            // בדיקה אם קיים לפני מחיקה (אופציונלי)
             var prof = await _profService.GetByIdAsync(id);
             if (prof == null) return NotFound();
-
             await _profService.DeleteAsync(id);
             return NoContent();
         }
+
         [HttpPost("login")]
-        public async Task<ActionResult<ProfessionalDto>> Login([FromQuery] string email, [FromQuery] string password)
+        public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
         {
-            // הקריאה לסרוויס תבדוק גם אימייל/סיסמה וגם שהמשתמש לא מחוק (IsDeleted)
-            var prof = await _profService.LoginAsync(email, password);
-
-            if (prof == null)
-            {
-                return Unauthorized("אימייל או סיסמה שגויים, או שאיש המקצוע אינו פעיל במערכת");
-            }
-
-            return Ok(prof);
+            var response = await _profService.LoginAsync(email, password);
+            if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
+            return Ok(response);
         }
+
         [HttpPut("reset-password")]
         public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string newPassword)
         {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(newPassword))
-            {
-                return BadRequest("אימייל וסיסמה הם שדות חובה");
-            }
-
             var success = await _profService.UpdatePasswordAsync(email, newPassword);
-
-            if (!success)
-            {
-                // כאן נכנס העניין של ה-IsDeleted - אם המשתמש מחוק או לא קיים
-                return NotFound("לא נמצא משתמש פעיל עם כתובת האימייל הזו");
-            }
-
+            if (!success) return NotFound("לא נמצא משתמש פעיל");
             return Ok("הסיסמה עודכנה בהצלחה");
         }
     }

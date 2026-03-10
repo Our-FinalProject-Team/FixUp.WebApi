@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FixUp.Service.Dto
+namespace FixUp.Service.DTOs
 {
-    public class CategoryDto
+    public class CategoryDTO
     {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string? IconUrl { get; set; }
     }
 }

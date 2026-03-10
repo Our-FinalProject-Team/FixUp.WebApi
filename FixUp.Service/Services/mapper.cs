@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using FixUp.Repository.Models;
+
 using FixUp.Service.Dto;
+using FixUp.Service.DTOs;
 
 namespace FixUp.Service.Services
 {
@@ -14,7 +16,7 @@ namespace FixUp.Service.Services
             CreateMap<Professional, ProfessionalDto>().ReverseMap();
 
             // מיפוי קטגוריות
-            CreateMap<Category, CategoryDto>().ReverseMap();
+            CreateMap<Category,CategoryDTO>() .ReverseMap();
 
             // מיפוי משימות
             CreateMap<FixUpTask, FixUpTaskDto>().ReverseMap();

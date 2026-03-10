@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
-using FixUp.Repository.Repositories;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 
@@ -10,11 +9,13 @@ namespace FixUp.Service.Services
     public class ClientService : IClientService
     {
         private readonly IClientRepository _clientRepo;
+        private readonly IAuthService _authService; // הזרקה חדשה
         private readonly IMapper _mapper;
 
-        public ClientService(IClientRepository clientRepo, IMapper mapper)
+        public ClientService(IClientRepository clientRepo, IAuthService authService, IMapper mapper)
         {
             _clientRepo = clientRepo;
+            _authService = authService;
             _mapper = mapper;
         }
 
@@ -33,71 +34,120 @@ namespace FixUp.Service.Services
         public async Task AddAsync(ClientDto item)
         {
             var client = _mapper.Map<Client>(item);
-            await _clientRepo.UpdateClientAsync(client); // או AddClientAsync אם קיים ב-Repo
+            await _clientRepo.AddClientAsync(client);
         }
 
         public async Task UpdateAsync(int id, ClientDto item)
         {
+            // שליפת הלקוח הקיים מהמסד
             var existingClient = await _clientRepo.GetClientByIdAsync(id);
+
             if (existingClient != null)
             {
+                // שמירת ה-ID המקורי מהמסד כדי למנוע דריסה ל-0 או לערך אחר מה-DTO
+                var originalId = existingClient.Id;
+
+                // מיפוי הנתונים החדשים על האובייקט הקיים
                 _mapper.Map(item, existingClient);
+
+                // החזרה ידנית של ה-ID המקורי כדי ש-EF לא יזהה ניסיון לשינוי מפתח
+                existingClient.Id = originalId;
+
+                // ביצוע העדכון ברפוזיטורי
                 await _clientRepo.UpdateClientAsync(existingClient);
             }
         }
 
         public async Task DeleteAsync(int id)
         {
-            // מימוש מחיקה דרך ה-Repository
-            await _clientRepo.DeleteClientAsync(id);
+            var client = await _clientRepo.GetClientByIdAsync(id);
+            if (client != null)
+            {
+                client.IsDeleted = true;
+                await _clientRepo.UpdateClientAsync(client);
+            }
         }
 
-        public async Task RegisterClientAsync(ClientDto clientDto, string password)
-        {
-            // המרה מ-DTO למודל Client
-            var clientModel = _mapper.Map<Client>(clientDto);
-
-            // הגדרות ברירת מחדל לרישום חדש
-            clientModel.PasswordHash = password; // הזרקת סיסמה
-            clientModel.CreatedAt = DateTime.Now;
-            clientModel.IsDeleted = false; // <--- כאן אנחנו קובעים שהוא "קיים" ופעיל
-
-            // שמירה ב-Repository
-            await _clientRepo.AddClientAsync(clientModel);
-        }
-        public async Task<ClientDto> LoginAsync(string email, string password)
+        public async Task RegisterClientAsync(ClientDto dto, string password)
         {
             var clients = await _clientRepo.GetAllClientsAsync();
+            var existingClient = clients.FirstOrDefault(c => c.Email.Equals(dto.Email, StringComparison.OrdinalIgnoreCase));
 
-            var client = clients.FirstOrDefault(c =>
-                c.Email == email &&
-                c.PasswordHash == password &&
-                !c.IsDeleted); // בדיקה שהלקוח פעיל
+            if (existingClient != null && !existingClient.IsDeleted)
+                throw new Exception("משתמש פעיל עם אימייל זה כבר קיים");
 
-            if (client == null) return null;
+            // השורה החשובה - הצפנת הסיסמה
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-            return _mapper.Map<ClientDto>(client);
+            if (existingClient != null && existingClient.IsDeleted)
+            {
+                _mapper.Map(dto, existingClient);
+                existingClient.IsDeleted = false;
+                existingClient.PasswordHash = passwordHash;
+                await _clientRepo.UpdateClientAsync(existingClient);
+            }
+            else
+            {
+                var clientModel = _mapper.Map<Client>(dto);
+                clientModel.PasswordHash = passwordHash;
+                clientModel.IsDeleted = false;
+                await _clientRepo.AddClientAsync(clientModel);
+            }
         }
+
+        // --- לוגין מעודכן עם טוקן ---
+        public async Task<AuthResponseDto> LoginAsync(string email, string password)
+        {
+            var clients = await _clientRepo.GetAllClientsAsync();
+            var client = clients.FirstOrDefault(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+
+            // בדיקה שהמשתמש קיים, לא מחוק, והסיסמה מתאימה להאש
+            if (client == null || client.IsDeleted || !BCrypt.Net.BCrypt.Verify(password, client.PasswordHash))
+            {
+                return null;
+            }
+
+            var clientDto = _mapper.Map<ClientDto>(client);
+            var token = _authService.GenerateJwtToken(client.Email, "Client");
+
+            return new AuthResponseDto
+            {
+                User = clientDto,
+                Token = token,
+                Role = "Client"
+            };
+        }
+
         public async Task<bool> UpdatePasswordAsync(string email, string newPassword)
         {
-            // 1. שליפת המשתמש מה-Repository (כאן הוא מכיר את IsDeleted ו-PasswordHash)
-            // אנחנו משתמשים במודל User כפי שמופיע ב-FixUp.Repository.Models
             var allEntities = await _clientRepo.GetAllClientsAsync();
             var user = allEntities.FirstOrDefault(u =>
                 u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.IsDeleted == false); // כאן IsDeleted יעבוד כי זו הישות מה-Repo
+                u.IsDeleted == false);
 
             if (user == null) return false;
 
-            // 2. עדכון הסיסמה בתוך האובייקט
-            // שימי לב: השדה במודל שלך הוא PasswordHash
             user.PasswordHash = newPassword;
-
-            // 3. קריאה לפונקציית העדכון שנמצאת ב-Repository
-            // לפי מה שכתבת, היא מקבלת את האובייקט המלא
             await _clientRepo.UpdateClientAsync(user);
-
             return true;
+        }
+        public async Task UpdateByEmailAsync(string email, ClientDto item)
+        {
+            var all = await _clientRepo.GetAllClientsAsync();
+            var client = all.FirstOrDefault(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+
+            if (client != null)
+            {
+                var originalId = client.Id;
+                var originalHash = client.PasswordHash; // שומרים על הסיסמה המוצפנת
+
+                _mapper.Map(item, client);
+
+                client.Id = originalId;
+                client.PasswordHash = originalHash;
+
+                await _clientRepo.UpdateClientAsync(client);
+            }
         }
     }
 }

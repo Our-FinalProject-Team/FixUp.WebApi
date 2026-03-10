@@ -6,13 +6,58 @@ using FixUp.Service.Interfases;
 using FixUp.Service.Services;
 using FixUpSolution.Data;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. הוספת שירותים בסיסיים
 builder.Services.AddControllers();
-builder.Services.AddAuthorization(); // פותר את השגיאה מהחלון השחור
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
 
+builder.Services.AddAuthorization(); // פותר את השגיאה מהחלון השחור
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "FixUp API", Version = "v1" });
+
+    // הגדרת האבטחה - זה מה שחסר לך כדי שהטוקן יעבור!
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 // 2. הגדרת Swagger (הקווים האדומים ייעלמו אחרי ההתקנה)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -43,14 +88,18 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<TokenGenerator>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 // הוספת מדיניות CORS
 
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 var app = builder.Build();
-app.UseCors("AllowAll");
+app.UseMiddleware<FixUp.WebApi.Middleware.ExceptionMiddleware>();
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
 if (app.Environment.IsDevelopment())
 {
@@ -58,9 +107,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // כאן יופיע הממשק הגרפי
 }
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
+app.UseCors("AllowAll");
 
+app.UseHttpsRedirection();
+app.UseAuthentication(); // קודם בודקים מי המשתמש
+app.UseAuthorization();  // אחר כך בודקים מה מותר לו
 app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
 
 app.Run(); // הרצה אחת בלבד בסוף
