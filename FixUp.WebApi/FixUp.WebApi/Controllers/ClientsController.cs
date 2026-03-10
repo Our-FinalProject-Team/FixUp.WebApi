@@ -24,17 +24,24 @@ public class ClientsController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] ClientDto dto, [FromQuery] string password)
     {
-        await _service.RegisterClientAsync(dto, password);
-        return Ok("הלקוח נרשם בהצלחה");
+        try
+        {
+            await _service.RegisterClientAsync(dto, password);
+            return Ok("הלקוח נרשם בהצלחה");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [Authorize(Roles = "Client")]
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] ClientDto dto)
     {
-        var client = await _service.GetByIdAsync(id);
-        if (client == null) return NotFound("הלקוח לא נמצא");
-        await _service.DeleteAsync(id);
+        var existingClient = await _service.GetByIdAsync(id);
+        if (existingClient == null) return NotFound("הלקוח לא נמצא");
+        await _service.UpdateAsync(id, dto);
         return NoContent();
     }
 
@@ -49,11 +56,29 @@ public class ClientsController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Client")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var client = await _service.GetByIdAsync(id);
+        if (client == null) return NotFound("הלקוח לא נמצא");
+        await _service.DeleteAsync(id);
+        return NoContent();
+    }
+
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
     {
         var response = await _service.LoginAsync(email, password);
         if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
         return Ok(response);
+    }
+
+    [HttpPut("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string newPassword)
+    {
+        var success = await _service.UpdatePasswordAsync(email, newPassword);
+        if (!success) return NotFound("לא נמצא משתמש פעיל");
+        return Ok("הסיסמה עודכנה בהצלחה");
     }
 }

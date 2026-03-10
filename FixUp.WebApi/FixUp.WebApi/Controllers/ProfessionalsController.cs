@@ -1,4 +1,5 @@
-﻿using FixUp.Service.Dto;
+﻿
+using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,9 +31,23 @@ namespace FixUp.WebApi.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] ProfessionalDto profDto, [FromQuery] string password)
         {
-            // אין צורך ב-try-catch! אם תהיה שגיאה, ה-Middleware יתפוס אותה ויחזיר BadRequest מסודר
-            await _profService.RegisterProfessionalAsync(profDto, password);
-            return Ok("איש המקצוע נרשם בהצלחה במערכת");
+            try
+            {
+                await _profService.RegisterProfessionalAsync(profDto, password);
+                return Ok("איש המקצוע נרשם בהצלחה במערכת");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Roles = "Professional")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ProfessionalDto profDto)
+        {
+            await _profService.UpdateAsync(id, profDto);
+            return NoContent();
         }
 
         [Authorize(Roles = "Professional")]
@@ -59,6 +74,7 @@ namespace FixUp.WebApi.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
         {
+            // כאן משתמשים ב-AuthResponseDto שמחזיר גם את הטוקן וגם את פרטי המשתמש
             var response = await _profService.LoginAsync(email, password);
             if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
             return Ok(response);

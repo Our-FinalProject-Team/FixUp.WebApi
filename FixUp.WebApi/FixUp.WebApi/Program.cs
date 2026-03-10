@@ -99,7 +99,7 @@ builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 var app = builder.Build();
-app.UseMiddleware<FixUp.WebApi.Middleware.ExceptionMiddleware>();
+//app.UseMiddleware<FixUp.WebApi.Middleware.ExceptionMiddleware>();
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
 if (app.Environment.IsDevelopment())
 {
