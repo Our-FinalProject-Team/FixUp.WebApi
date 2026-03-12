@@ -90,7 +90,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-
+builder.Services.AddScoped<IAuthService, AuthService>();
 // הוספת מדיניות CORS
 
 // --- חלק השירותים (לפני ה-Build) ---

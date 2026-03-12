@@ -3,13 +3,14 @@ using FixUp.Repository.Interfaces;
 using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
+using System.ComponentModel.DataAnnotations;
 
 namespace FixUp.Service.Services
 {
     public class ClientService : IClientService
     {
         private readonly IClientRepository _clientRepo;
-        private readonly IAuthService _authService; // הזרקה חדשה
+        private readonly IAuthService _authService;
         private readonly IMapper _mapper;
 
         public ClientService(IClientRepository clientRepo, IAuthService authService, IMapper mapper)
@@ -17,6 +18,17 @@ namespace FixUp.Service.Services
             _clientRepo = clientRepo;
             _authService = authService;
             _mapper = mapper;
+        }
+
+        // פונקציית עזר לבדיקת תקינות
+        private void ValidateDto(object dto)
+        {
+            var context = new ValidationContext(dto);
+            var results = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(dto, context, results, true))
+            {
+                throw new Exception(results.First().ErrorMessage);
+            }
         }
 
         public async Task<IEnumerable<ClientDto>> GetAllAsync()
@@ -33,27 +45,25 @@ namespace FixUp.Service.Services
 
         public async Task AddAsync(ClientDto item)
         {
+            ValidateDto(item); // בדיקת תקינות
             var client = _mapper.Map<Client>(item);
             await _clientRepo.AddClientAsync(client);
         }
 
         public async Task UpdateAsync(int id, ClientDto item)
         {
-            // שליפת הלקוח הקיים מהמסד
+            ValidateDto(item); // בדיקת תקינות
             var existingClient = await _clientRepo.GetClientByIdAsync(id);
-
             if (existingClient != null)
             {
-                // שמירת ה-ID המקורי מהמסד כדי למנוע דריסה ל-0 או לערך אחר מה-DTO
                 var originalId = existingClient.Id;
+                var originalHash = existingClient.PasswordHash;
 
-                // מיפוי הנתונים החדשים על האובייקט הקיים
                 _mapper.Map(item, existingClient);
 
-                // החזרה ידנית של ה-ID המקורי כדי ש-EF לא יזהה ניסיון לשינוי מפתח
                 existingClient.Id = originalId;
+                existingClient.PasswordHash = originalHash;
 
-                // ביצוע העדכון ברפוזיטורי
                 await _clientRepo.UpdateClientAsync(existingClient);
             }
         }
@@ -70,13 +80,18 @@ namespace FixUp.Service.Services
 
         public async Task RegisterClientAsync(ClientDto dto, string password)
         {
+            ValidateDto(dto); // בדיקת DTO
+
+            // בדיקת סיסמה
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 6 || !password.Any(char.IsDigit) || !password.Any(char.IsLetter))
+                throw new Exception("הסיסמה חייבת להכיל אותיות ומספרים (מינימום 6 תווים)");
+
             var clients = await _clientRepo.GetAllClientsAsync();
             var existingClient = clients.FirstOrDefault(c => c.Email.Equals(dto.Email, StringComparison.OrdinalIgnoreCase));
 
             if (existingClient != null && !existingClient.IsDeleted)
                 throw new Exception("משתמש פעיל עם אימייל זה כבר קיים");
 
-            // השורה החשובה - הצפנת הסיסמה
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
             if (existingClient != null && existingClient.IsDeleted)
@@ -95,57 +110,45 @@ namespace FixUp.Service.Services
             }
         }
 
-        // --- לוגין מעודכן עם טוקן ---
         public async Task<AuthResponseDto> LoginAsync(string email, string password)
         {
             var clients = await _clientRepo.GetAllClientsAsync();
             var client = clients.FirstOrDefault(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
-            // בדיקה שהמשתמש קיים, לא מחוק, והסיסמה מתאימה להאש
             if (client == null || client.IsDeleted || !BCrypt.Net.BCrypt.Verify(password, client.PasswordHash))
-            {
                 return null;
-            }
 
             var clientDto = _mapper.Map<ClientDto>(client);
             var token = _authService.GenerateJwtToken(client.Email, "Client");
 
-            return new AuthResponseDto
-            {
-                User = clientDto,
-                Token = token,
-                Role = "Client"
-            };
+            return new AuthResponseDto { User = clientDto, Token = token, Role = "Client" };
         }
 
         public async Task<bool> UpdatePasswordAsync(string email, string newPassword)
         {
             var allEntities = await _clientRepo.GetAllClientsAsync();
-            var user = allEntities.FirstOrDefault(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.IsDeleted == false);
+            var user = allEntities.FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) && !u.IsDeleted);
 
             if (user == null) return false;
 
-            user.PasswordHash = newPassword;
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             await _clientRepo.UpdateClientAsync(user);
             return true;
         }
+
         public async Task UpdateByEmailAsync(string email, ClientDto item)
         {
+            ValidateDto(item); // בדיקת תקינות
             var all = await _clientRepo.GetAllClientsAsync();
             var client = all.FirstOrDefault(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
             if (client != null)
             {
                 var originalId = client.Id;
-                var originalHash = client.PasswordHash; // שומרים על הסיסמה המוצפנת
-
+                var originalHash = client.PasswordHash;
                 _mapper.Map(item, client);
-
                 client.Id = originalId;
                 client.PasswordHash = originalHash;
-
                 await _clientRepo.UpdateClientAsync(client);
             }
         }

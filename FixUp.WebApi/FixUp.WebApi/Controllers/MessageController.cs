@@ -1,31 +1,40 @@
-﻿using FixUp.Service.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
 using FixUp.Service.Interfaces;
-using FixUp.WebAPI.Hubs;
-using Microsoft.AspNetCore.Mvc;
+using FixUp.Service.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace FixUp.WebAPI.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
+    public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
-        private readonly IHubContext<ChatHub> _hubContext; // הוספת ה-Hub
 
+        public MessageController(IMessageService messageService)
         {
             _messageService = messageService;
-            _hubContext = hubContext;
         }
 
+        // שליפת כל ההודעות (לפי הממשק הכללי IService)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetAll()
         {
+            var messages = await _messageService.GetAllAsync();
+            return Ok(messages);
+        }
 
-            {
+        // שליפת היסטוריית הודעות לפי קטגוריה (פורום ספציפי)
+        [HttpGet("category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetByCategoryId(int categoryId)
+        {
+            var messages = await _messageService.GetByCategoryIdAsync(categoryId);
+            return Ok(messages);
         }
 
         // שליחת הודעה חדשה
         [HttpPost("send")]
-        
         public async Task<IActionResult> SendMessage([FromBody] MessageDTO messageDto)
         {
             if (messageDto == null || string.IsNullOrEmpty(messageDto.Content))
@@ -33,8 +42,8 @@ namespace FixUp.WebAPI.Controllers
                 return BadRequest("תוכן ההודעה לא יכול להיות ריק");
             }
 
-            // 1. שמירה במסד הנתונים
             await _messageService.AddAsync(messageDto);
+            return Ok(new { message = "ההודעה נשלחה בהצלחה" });
         }
     }
 }

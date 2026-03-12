@@ -4,6 +4,7 @@ using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace FixUp.Service.Services
 {
@@ -26,18 +27,25 @@ namespace FixUp.Service.Services
             _mapper = mapper;
         }
 
-        // --- לוגין מעודכן עם טוקן ---
+        // פונקציית עזר לבדיקת תקינות - נשארת פרטית ופנימית
+        private void ValidateDto(object dto)
+        {
+            var context = new ValidationContext(dto);
+            var results = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(dto, context, results, true))
+            {
+                throw new Exception(results.First().ErrorMessage);
+            }
+        }
+
         public async Task<AuthResponseDto> LoginAsync(string email, string password)
         {
             var professionals = await _professionalRepository.GetAllProfessionalsAsync();
-
-            // מוצאים את המשתמש לפי אימייל בלבד (כי את הסיסמה אי אפשר לשלוף בשאילתה)
             var prof = professionals.FirstOrDefault(p => p.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
-            // בודקים: האם המשתמש קיים? האם הוא לא מחוק? והאם הסיסמה שהזין מתאימה להאש שבמסד?
             if (prof == null || prof.IsDeleted || !BCrypt.Net.BCrypt.Verify(password, prof.PasswordHash))
             {
-                return null; // אימות נכשל
+                return null;
             }
 
             var profDto = _mapper.Map<ProfessionalDto>(prof);
@@ -50,7 +58,7 @@ namespace FixUp.Service.Services
                 Role = "Professional"
             };
         }
-        // --- שאר הפונקציות המקוריות שלך ללא שינוי לוגי ---
+
         public async Task<IEnumerable<ProfessionalDto>> GetAllAsync()
         {
             var all = await _professionalRepository.GetAllProfessionalsAsync();
@@ -67,22 +75,24 @@ namespace FixUp.Service.Services
 
         public async Task AddAsync(ProfessionalDto item)
         {
+            ValidateDto(item); // בדיקת תקינות
             var entity = _mapper.Map<Professional>(item);
             await _professionalRepository.AddProfessionalAsync(entity);
         }
 
         public async Task UpdateAsync(int id, ProfessionalDto item)
         {
+            ValidateDto(item); // בדיקת תקינות לפני עדכון
             var prof = await _professionalRepository.GetProfessionalByIdAsync(id);
             if (prof != null)
             {
-                var originalId = prof.Id; // שמירת ה-ID מה-DB
+                var originalId = prof.Id;
                 _mapper.Map(item, prof);
-                prof.Id = originalId;     // החזרה של ה-ID המקורי
-
+                prof.Id = originalId;
                 await _professionalRepository.UpdateProfessionalAsync(prof);
             }
         }
+
         public async Task DeleteAsync(int id)
         {
             var prof = await _professionalRepository.GetProfessionalByIdAsync(id);
@@ -90,34 +100,38 @@ namespace FixUp.Service.Services
             {
                 prof.IsDeleted = true;
                 await _professionalRepository.UpdateProfessionalAsync(prof);
-                // שחרור בקשות (לוגיקה מקורית שלך)
                 await _requestRepository.ReleaseRequestsByProfessionalIdAsync(id);
             }
         }
+
         public async Task RegisterProfessionalAsync(ProfessionalDto profDto, string password)
         {
+            ValidateDto(profDto); // בדיקת השדות ב-DTO
+
+            // בדיקת סיסמה ידנית (כי היא לא בתוך ה-DTO)
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 6 || !password.Any(char.IsDigit) || !password.Any(char.IsLetter))
+                throw new Exception("הסיסמה חייבת להיות באורך 6 תווים לפחות ולשלב אותיות ומספרים");
+
             var professionals = await _professionalRepository.GetAllProfessionalsAsync();
             var existingProf = professionals.FirstOrDefault(p => p.Email.Equals(profDto.Email, StringComparison.OrdinalIgnoreCase));
 
             if (existingProf != null && !existingProf.IsDeleted)
-                throw new Exception("Active user with this email already exists");
+                throw new Exception("משתמש פעיל עם אימייל זה כבר קיים");
 
-            // --- השורה החדשה והחשובה ---
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-            // ---------------------------
 
             if (existingProf != null && existingProf.IsDeleted)
             {
                 _mapper.Map(profDto, existingProf);
                 existingProf.IsDeleted = false;
-                existingProf.PasswordHash = passwordHash; // שמירת ההאש
+                existingProf.PasswordHash = passwordHash;
                 existingProf.CreatedAt = DateTime.Now;
                 await _professionalRepository.UpdateProfessionalAsync(existingProf);
             }
             else
             {
                 var newProf = _mapper.Map<Professional>(profDto);
-                newProf.PasswordHash = passwordHash; // שמירת ההאש
+                newProf.PasswordHash = passwordHash;
                 newProf.IsDeleted = false;
                 await _professionalRepository.AddProfessionalAsync(newProf);
             }
@@ -129,31 +143,27 @@ namespace FixUp.Service.Services
             var pro = all.FirstOrDefault(p => p.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
             if (pro == null) return false;
 
-            // הצפנה מחדש של הסיסמה החדשה
             pro.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-
             if (pro.IsDeleted) pro.IsDeleted = false;
             await _professionalRepository.UpdateProfessionalAsync(pro);
             return true;
         }
+
         public async Task UpdateByEmailAsync(string email, ProfessionalDto item)
         {
+            ValidateDto(item); // בדיקת תקינות
             var all = await _professionalRepository.GetAllProfessionalsAsync();
             var prof = all.FirstOrDefault(p => p.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
             if (prof != null)
             {
                 var originalId = prof.Id;
-                var originalHash = prof.PasswordHash; // שומרים על הסיסמה שלא תימחק
-
+                var originalHash = prof.PasswordHash;
                 _mapper.Map(item, prof);
-
                 prof.Id = originalId;
                 prof.PasswordHash = originalHash;
-
                 await _professionalRepository.UpdateProfessionalAsync(prof);
             }
         }
-
     }
 }
