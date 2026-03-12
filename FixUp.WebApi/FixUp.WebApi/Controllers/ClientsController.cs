@@ -22,19 +22,11 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] ClientDto dto, [FromQuery] string password)
+    public async Task<IActionResult> Register([FromBody] ClientRegisterDto regDto)
     {
-        try
-        {
-            await _service.RegisterClientAsync(dto, password);
-            return Ok("הלקוח נרשם בהצלחה");
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await _service.RegisterClientAsync(regDto, regDto.Password);
+        return Ok("הלקוח נרשם בהצלחה");
     }
-
     [Authorize(Roles = "Client")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] ClientDto dto)
@@ -65,15 +57,13 @@ public class ClientsController : ControllerBase
         await _service.DeleteAsync(id);
         return NoContent();
     }
-
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
+    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] UserLoginDto loginDto)
     {
-        var response = await _service.LoginAsync(email, password);
+        var response = await _service.LoginAsync(loginDto.Email, loginDto.Password);
         if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
         return Ok(response);
     }
-
     [HttpPut("reset-password")]
     public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string newPassword)
     {

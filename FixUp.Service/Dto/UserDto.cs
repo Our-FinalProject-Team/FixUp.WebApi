@@ -21,5 +21,6 @@ namespace FixUp.Service.Dto
 
         [Required(ErrorMessage = "כתובת היא שדה חובה")]
         public string Address { get; set; }
-    }
+       
+    } 
 }

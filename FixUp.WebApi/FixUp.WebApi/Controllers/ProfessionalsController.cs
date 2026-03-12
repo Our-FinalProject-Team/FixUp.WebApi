@@ -29,17 +29,11 @@ namespace FixUp.WebApi.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] ProfessionalDto profDto, [FromQuery] string password)
+        public async Task<IActionResult> Register([FromBody] ProfessionalRegisterDto regDto)
         {
-            try
-            {
-                await _profService.RegisterProfessionalAsync(profDto, password);
-                return Ok("איש המקצוע נרשם בהצלחה במערכת");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            // regDto מכיל עכשיו גם את הפרטים וגם את Password כי הוא יורש
+            await _profService.RegisterProfessionalAsync(regDto, regDto.Password);
+            return Ok("נרשם בהצלחה");
         }
 
         [Authorize(Roles = "Professional")]
@@ -72,10 +66,11 @@ namespace FixUp.WebApi.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponseDto>> Login([FromQuery] string email, [FromQuery] string password)
+        // שימי לב לשינוי: הוספנו [FromBody] ושינינו ל-UserLoginDto
+        public async Task<ActionResult<AuthResponseDto>> Login([FromBody] UserLoginDto loginDto)
         {
-            // כאן משתמשים ב-AuthResponseDto שמחזיר גם את הטוקן וגם את פרטי המשתמש
-            var response = await _profService.LoginAsync(email, password);
+            // עכשיו אנחנו מעבירים לשירות את הנתונים מתוך האובייקט
+            var response = await _profService.LoginAsync(loginDto.Email, loginDto.Password);
             if (response == null) return Unauthorized("אימייל או סיסמה שגויים");
             return Ok(response);
         }
