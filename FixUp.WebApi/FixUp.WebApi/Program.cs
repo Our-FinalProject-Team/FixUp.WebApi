@@ -64,7 +64,9 @@ builder.Services.AddSwaggerGen();
 
 // 3. חיבור ל-SQL (לפי הקוד שלך)
 builder.Services.AddDbContext<IContext, DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    sqlOptions => sqlOptions.EnableRetryOnFailure())
+);
 
 
 // --- הזרקות ה-Services (התוספת החדשה) ---
@@ -88,37 +90,51 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-builder.Services.AddScoped<IChatRepository, ChatRepository>();
-builder.Services.AddScoped<IMessageService, MessageService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<TokenGenerator>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+
 // הוספת מדיניות CORS
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+// --- חלק השירותים (לפני ה-Build) ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SignalRPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
+
+builder.Services.AddSignalR();
+builder.Services.AddControllers();
+
 var app = builder.Build();
-//app.UseMiddleware<FixUp.WebApi.Middleware.ExceptionMiddleware>();
+app.UseCors("AllowAll");
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(); // כאן יופיע הממשק הגרפי
+    app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
-
 app.UseHttpsRedirection();
-app.UseAuthentication(); // קודם בודקים מי המשתמש
-app.UseAuthorization();  // אחר כך בודקים מה מותר לו
+app.UseAuthorization();
+
 app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
 
 app.Run(); // הרצה אחת בלבד בסוף
 
+// הוספת UseRouting - חשוב מאוד כדי שה-CORS ידע לאן הבקשה הולכת
+app.UseRouting();
 
+// ה-CORS חייב לבוא אחרי ה-Routing ולפני ה-Authorization
+app.UseCors("SignalRPolicy");
 
+app.UseAuthorization();
 
+// חיבור ה-Hubs והקונטרולרים
+app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
+app.MapControllers();
 
+app.Run();
 
-//builder.Services.AddAutoMapper(typeof(MappingProfile));
