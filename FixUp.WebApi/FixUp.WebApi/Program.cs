@@ -109,7 +109,7 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 
 var app = builder.Build();
-app.UseCors("AllowAll");
+app.UseCors("SignalRPolicy");
 // 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
 if (app.Environment.IsDevelopment())
 {
