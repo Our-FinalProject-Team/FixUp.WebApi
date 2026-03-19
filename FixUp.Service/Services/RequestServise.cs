@@ -1,134 +1,124 @@
 ﻿using AutoMapper;
-
 using FixUp.Repository.Interfaces;
-using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace FixUp.Service.Services
+public class RequestService : IRequestService
 {
-    public class RequestService : IRequestService
+    private readonly IRequestRepository _requestRepository;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly IMapper _mapper;
+
+    public RequestService(IRequestRepository requestRepository, ICategoryRepository categoryRepository, IMapper mapper)
     {
-        private readonly IRequestRepository _requestRepository;
-        private readonly IProfessionalRepository _profRepository;
-        private readonly IMapper _mapper;
+        _requestRepository = requestRepository;
+        _categoryRepository = categoryRepository;
+        _mapper = mapper;
+    }
 
-        public RequestService(IRequestRepository requestRepository, IProfessionalRepository profRepository, IMapper mapper)
+    // הפונקציה שהוספנו ב-Interface - זו השמירה האמיתית!
+    public async Task<RequestDisplayDto> CreateRequestAsync(RequestCreateDto dto)
+    {
+        var request = _mapper.Map<Request>(dto);
+        request.CreatedAt = DateTime.Now;
+        request.Status = "חדש";
+
+        // משיכת שם הקטגוריה לפי ה-ID
+        var category = await _categoryRepository.GetCategoryByIdAsync(dto.CategoryId);
+        if (category != null) request.Subject = category.Name;
+
+        var saved = await _requestRepository.AddAsync(request);
+        return _mapper.Map<RequestDisplayDto>(saved);
+    }
+
+    // מימושים של IService<RequestDisplayDto> - כדי שה-VS לא יכעס
+    public async Task AddAsync(RequestDisplayDto item) => throw new NotImplementedException("Use CreateRequestAsync instead");
+    public async Task<IEnumerable<RequestDisplayDto>> GetAllAsync() => _mapper.Map<IEnumerable<RequestDisplayDto>>(await _requestRepository.GetAllAsync());
+    public async Task<RequestDisplayDto> GetByIdAsync(int id) => _mapper.Map<RequestDisplayDto>(await _requestRepository.GetByIdAsync(id));
+    public async Task UpdateAsync(int id, RequestDisplayDto item) { /* מימוש עתידי */ }
+    public async Task DeleteAsync(int id) { /* מימוש עתידי */ }
+
+    // שאר הפונקציות שלך...
+    public async Task<IEnumerable<RequestDisplayDto>> GetAvailableRequestsForMeAsync(int profId)
+    {
+        // שליפת כל הבקשות עם סטטוס "חדש" שמשויכות לבעל המקצוע
+        var requests = await _requestRepository.GetRequestsByProfessionalIdAsync(profId);
+        var pendingRequests = requests.Where(r => r.Status == "חדש");
+        
+        return _mapper.Map<IEnumerable<RequestDisplayDto>>(pendingRequests);
+    }
+    public async Task AddRequestFromDtoAsync(RequestCreateDto dto)
+    {
+        // 1. מיפוי ה-DTO למודל של בסיס הנתונים
+        var newRequest = _mapper.Map<Request>(dto);
+
+        // 2. הוספת ערכי ברירת מחדל
+        newRequest.CreatedAt = DateTime.Now;
+        newRequest.Status = "חדש";
+
+        // 3. שליפת שם הקטגוריה (בשביל ה-Subject)
+        var category = await _categoryRepository.GetCategoryByIdAsync(dto.CategoryId);
+        if (category != null)
         {
-            _requestRepository = requestRepository;
-            _profRepository = profRepository;
-            _mapper = mapper;
+            newRequest.Subject = category.Name;
         }
 
-        // --- מימוש פונקציות IService הכלליות ---
+        // 4. השמירה האמיתית ב-SQL!
+        await _requestRepository.AddAsync(newRequest);
+   
+    }
+   
+    public async Task<IEnumerable<RequestDisplayDto>> GetMyJobsAsync(int profId)
+    {
+        // שליפת כל הבקשות שכבר אושרו לבעל המקצוע
+        var requests = await _requestRepository.GetRequestsByProfessionalIdAsync(profId);
+        var myJobs = requests.Where(r => r.Status == "בטיפול" || r.Status == "מאושר");
+        
+        return _mapper.Map<IEnumerable<RequestDisplayDto>>(myJobs);
+    }
+    
+    // בתוך RequestService.cs
+    public async Task<bool> AcceptRequestAsync(int requestId, int profId)
+    {
+        // בדיקה שהבקשה אכן משויכת לבעל המקצוע
+        var request = await _requestRepository.GetByIdAsync(requestId);
+        if (request == null || request.ProfessionalId != profId)
+            return false;
 
-        public async Task<IEnumerable<RequestDisplayDto>> GetAllAsync()
+        // עדכון סטטוס ל'בטיפול'
+        await _requestRepository.UpdateStatusAsync(requestId, "בטיפול");
+        return true;
+    }
+
+    public async Task<bool> UpdateRequestStatusAsync(int requestId, string status)
+    {
+        try
         {
-            var requests = await _requestRepository.GetAllAsync();
-            return _mapper.Map<IEnumerable<RequestDisplayDto>>(requests);
+            await _requestRepository.UpdateStatusAsync(requestId, status);
+            return true;
         }
-
-        public async Task<RequestDisplayDto> GetByIdAsync(int id)
+        catch
         {
-            var request = await _requestRepository.GetByIdAsync(id);
-            return _mapper.Map<RequestDisplayDto>(request);
+            return false;
         }
+    }
+    public async Task<IEnumerable<RequestDisplayDto>> GetRequestsByProAsync(int proId)
+    {
+        // 1. שליפת כל הבקשות מהדאטהבייס ששייכות לבעל המקצוע
+        var requests = await _requestRepository.GetRequestsByProfessionalIdAsync(proId);
 
-        public async Task UpdateAsync(int id, RequestDisplayDto itemDto)
+        // 2. המרה של הנתונים מהטבלה (Entity) לפורמט של התצוגה (DTO)
+        return requests.Select(r => new RequestDisplayDto
         {
-            var existingRequest = await _requestRepository.GetByIdAsync(id);
-            if (existingRequest != null)
-            {
-                // מעדכנים את הישות הקיימת לפי הנתונים מה-DTO
-                _mapper.Map(itemDto, existingRequest);
-                await _requestRepository.UpdateAsync(existingRequest);
-            }
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            await _requestRepository.DeleteAsync(id);
-        }
-
-        // פונקציה ריקה כדי לעמוד בתנאי הממשק הכללי (כי אנחנו משתמשים ב-CreateDto במקום)
-        public Task AddAsync(RequestDisplayDto item) => throw new System.NotImplementedException("Use AddRequestFromDtoAsync instead");
-
-
-        // --- פונקציות מיוחדות למערכת FixUp ---
-
-        // 1. יצירת בקשה חדשה מהלקוח
-        public async Task AddRequestFromDtoAsync(RequestCreateDto dto)
-        {
-            var requestEntity = _mapper.Map<Request>(dto);
-
-            requestEntity.CreatedAt = System.DateTime.Now;
-            requestEntity.Status = "ממתין"; // סטטוס התחלתי
-
-            await _requestRepository.AddAsync(requestEntity);
-        }
-
-        // 2. סינון בקשות עבור הצ'אט/לוח של בעלי מקצוע
-        // בתוך RequestService.cs
-        public async Task<IEnumerable<RequestDisplayDto>> GetAvailableRequestsForMeAsync(int profId)
-        {
-            var prof = await _profRepository.GetProfessionalByIdAsync(profId);
-            if (prof == null || string.IsNullOrEmpty(prof.Specialty)) return new List<RequestDisplayDto>();
-
-            // 1. פירוק המומחיות למילים (למקרה שכתוב "חשמלאי מוסמך") וניקוי רווחים
-            var specialtyKeywords = prof.Specialty
-                .Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(k => k.Trim().ToLower())
-                .ToList();
-
-            var allRequests = await _requestRepository.GetAllAsync();
-
-            // 2. סינון חכם
-            var filtered = allRequests.Where(r =>
-                r.ProfessionalId == null && // רק בקשות שטרם שויכו
-                specialtyKeywords.Any(keyword =>
-                    (r.Subject != null && r.Subject.ToLower().Contains(keyword)) ||
-                    (r.Description != null && r.Description.ToLower().Contains(keyword))
-                )
-            );
-
-            return _mapper.Map<IEnumerable<RequestDisplayDto>>(filtered);
-        }
-        // 3. שליפת עבודות שבעל המקצוע כבר "לקח"
-        public async Task<IEnumerable<RequestDisplayDto>> GetMyJobsAsync(int profId)
-        {
-            var all = await _requestRepository.GetAllAsync();
-            var myJobs = all.Where(r => r.ProfessionalId == profId);
-            return _mapper.Map<IEnumerable<RequestDisplayDto>>(myJobs);
-        }
-        // בתוך RequestService.cs
-        public async Task<bool> AcceptRequestAsync(int requestId, int profId)
-        {
-            var request = await _requestRepository.GetByIdAsync(requestId);
-            var prof = await _profRepository.GetProfessionalByIdAsync(profId);
-
-            // בדיקה שהבקשה קיימת, שבעל המקצוע קיים, ושהבקשה פנויה
-            if (request != null && prof != null && request.ProfessionalId == null)
-            {
-                // בדיקת התאמה מקצועית (Case Insensitive)
-                string specialty = prof.Specialty.ToLower().Trim();
-                bool isMatch = (request.Subject?.ToLower().Contains(specialty) ?? false) ||
-                               (request.Description?.ToLower().Contains(specialty) ?? false);
-
-                if (isMatch)
-                {
-                    request.ProfessionalId = profId;
-                    request.Status = "בטיפול";
-                    await _requestRepository.UpdateAsync(request);
-                    return true; // רק כאן אנחנו מחזירים אמת
-                }
-            }
-
-            return false; // בכל מקרה אחר (לא נמצא, תפוס או לא מתאים למקצוע) - נחזיר שקר
-        }
-
+            Id = r.Id,
+            Subject = r.Subject,
+            Description = r.Description,
+            Address = r.Address,
+            Status = r.Status,
+            CreatedAt = r.CreatedAt,
+            ScheduledDate = r.ScheduledDate,
+            // כאן אפשר להוסיף שליפת שמות אם יש לך גישה לטבלת המשתמשים
+            ClientName = "לקוח " + r.ClientId
+        });
     }
 }

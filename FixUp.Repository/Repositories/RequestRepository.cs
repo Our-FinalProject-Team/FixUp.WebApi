@@ -32,14 +32,28 @@ namespace FixUp.Repository.Repositories
             await _context.SaveChangesAsync();
             return request;
         }
-
+        public async Task<IEnumerable<Request>> GetRequestsByProfessionalIdAsync(int proId)
+        {
+            return await _context.Requests
+                .Where(r => r.ProfessionalId == proId)
+                .ToListAsync();
+        }
         public async Task UpdateAsync(Request request)
         {
             // מעדכן בקשה קיימת
             _context.Requests.Update(request);
             await _context.SaveChangesAsync();
         }
-       
+        // בתוך RequestRepository.cs
+        public async Task UpdateStatusAsync(int id, string status)
+        {
+            var request = await _context.Requests.FindAsync(id);
+            if (request != null)
+            {
+                request.Status = status; // מעדכן ל"מאושר"
+                await _context.SaveChangesAsync();
+            }
+        }
         public async Task DeleteAsync(int id)
         {
             // מוחק בקשה לפי ID
@@ -65,6 +79,7 @@ namespace FixUp.Repository.Repositories
 
             await _context.SaveChangesAsync();
              }
+
     }
     
 }

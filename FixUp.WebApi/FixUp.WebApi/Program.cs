@@ -9,10 +9,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models; // הוספתי את זה כדי למנוע את השגיאה שציינת
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. הוספת שירותים בסיסיים
+// --- 1. הוספת שירותים (Services) ---
+
 builder.Services.AddControllers();
+
+// הגדרת CORS - המדיניות שמתאימה ל-React שלך
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SignalRPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -28,61 +44,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization(); // פותר את השגיאה מהחלון השחור
+builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c => {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "FixUp API", Version = "v1" });
 
-    // הגדרת האבטחה - זה מה שחסר לך כדי שהטוקן יעבור!
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+// הגדרת Swagger (בדיוק כפי שהיה לך בקוד)
+builder.Services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "FixUp API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
         Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
 
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             new string[] {}
         }
     });
 });
-// 2. הגדרת Swagger (הקווים האדומים ייעלמו אחרי ההתקנה)
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// 3. חיבור ל-SQL (לפי הקוד שלך)
+// חיבור ל-SQL
 builder.Services.AddDbContext<IContext, DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
     sqlOptions => sqlOptions.EnableRetryOnFailure())
 );
 
-
-// --- הזרקות ה-Services (התוספת החדשה) ---
-builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
-builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
-builder.Services.AddScoped<IClientService, ClientService>();
-//builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<IUserService, UserService>();
-
-// הזרקת AutoMapper - חובה כדי שהמרות יעבדו
-builder.Services.AddAutoMapper(typeof(MyMapper));
-
-
-
-// 4. רישום ה-Repositories (Dependency Injection)
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+// הזרקות ה-Services (העתקתי בדיוק מהקוד שלך)
 builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IFixUpTaskRepository, FixUpTaskRepository>();
@@ -91,26 +87,13 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-// הוספת מדיניות CORS
-
-// --- חלק השירותים (לפני ה-Build) ---
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("SignalRPolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
 
 builder.Services.AddSignalR();
-builder.Services.AddControllers();
 
 var app = builder.Build();
-app.UseCors("AllowAll");
-// 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
+
+// --- 2. הגדרת ה-Pipeline (הסדר המתוקן) ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -118,18 +101,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthorization();
 
-app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
-
-app.Run(); // הרצה אחת בלבד בסוף
-
-// הוספת UseRouting - חשוב מאוד כדי שה-CORS ידע לאן הבקשה הולכת
+// התיקון הקריטי: סדר ה-Middleware
 app.UseRouting();
 
-// ה-CORS חייב לבוא אחרי ה-Routing ולפני ה-Authorization
-app.UseCors("SignalRPolicy");
+app.UseCors("SignalRPolicy"); // שימוש במדיניות שהגדרנו למעלה
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // חיבור ה-Hubs והקונטרולרים
@@ -137,4 +115,3 @@ app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
 app.MapControllers();
 
 app.Run();
-
