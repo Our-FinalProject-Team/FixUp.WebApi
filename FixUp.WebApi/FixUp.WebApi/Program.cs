@@ -2,14 +2,13 @@
 using FixUp.Repository.Models;
 using FixUp.Repository.Repositories;
 using FixUp.Service.Interfaces;
-using FixUp.Service.Interfases;
 using FixUp.Service.Services;
 using FixUpSolution.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.OpenApi.Models; // הוספתי את זה כדי למנוע את השגיאה שציינת
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +45,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAutoMapper(typeof(MyMapper));
 
 // הגדרת Swagger (בדיוק כפי שהיה לך בקוד)
 builder.Services.AddSwaggerGen(c => {
@@ -53,7 +53,7 @@ builder.Services.AddSwaggerGen(c => {
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Description = "JWT Authorization header using Bearer scheme. Example: \"Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -77,8 +77,14 @@ builder.Services.AddDbContext<IContext, DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
     sqlOptions => sqlOptions.EnableRetryOnFailure())
 );
+// הזרקות ה-Services (העתקתי בדיוק מהקוד שלך)
+builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
+builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // הזרקות ה-Services (העתקתי בדיוק מהקוד שלך)
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IFixUpTaskRepository, FixUpTaskRepository>();
@@ -100,7 +106,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // התיקון הקריטי: סדר ה-Middleware
 app.UseRouting();

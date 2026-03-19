@@ -57,6 +57,14 @@ namespace FixUp.WebApi.Controllers
             return Ok(requests);
         }
 
+        // 7. קבלת כל ההזמנות של בעל מקצוע
+        [HttpGet("professional/{profId}/all")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetAllRequestsForProfessional(int profId)
+        {
+            var requests = await _requestService.GetRequestsByProAsync(profId);
+            return Ok(requests);
+        }
+
         // 5. אישור בקשה על ידי בעל מקצוע (לקיחת העבודה)
         [HttpPut("accept/{requestId}/{profId}")]
         public async Task<ActionResult> AcceptRequest(int requestId, int profId)
@@ -97,6 +105,22 @@ namespace FixUp.WebApi.Controllers
                 Console.WriteLine($"שגיאה בעדכון סטטוס: {ex.Message}");
                 return BadRequest($"שגיאה: {ex.Message}");
             }
+
+        }
+        // לקבלת ההיסטוריה של הלקוח
+        [HttpGet("client/{clientId}")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetByClient(int clientId)
+        {
+            var requests = await _requestService.GetRequestsByClientIdAsync(clientId);
+            return Ok(requests);
+        }
+
+        // לקבלת רק הלקוחות המאושרים של בעל המקצוע
+        [HttpGet("professional/{proId}/approved")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetApprovedByPro(int proId)
+        {
+            var requests = await _requestService.GetApprovedRequestsByProIdAsync(proId);
+            return Ok(requests);
         }
     }
 }

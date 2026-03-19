@@ -30,6 +30,19 @@ public class RequestService : IRequestService
         var saved = await _requestRepository.AddAsync(request);
         return _mapper.Map<RequestDisplayDto>(saved);
     }
+    public async Task<IEnumerable<RequestDisplayDto>> GetRequestsByClientIdAsync(int clientId)
+    {
+        var requests = await _requestRepository.GetRequestsByClientIdAsync(clientId);
+        return _mapper.Map<IEnumerable<RequestDisplayDto>>(requests);
+    }
+
+    public async Task<IEnumerable<RequestDisplayDto>> GetApprovedRequestsByProIdAsync(int proId)
+    {
+        var requests = await _requestRepository.GetRequestsByProfessionalIdAsync(proId);
+        // מחזיר רק את אלו שסטטוס שלהם הוא "מאושר" או "בטיפול"
+        var approved = requests.Where(r => r.Status == "מאושר" || r.Status == "בטיפול");
+        return _mapper.Map<IEnumerable<RequestDisplayDto>>(approved);
+    }
 
     // מימושים של IService<RequestDisplayDto> - כדי שה-VS לא יכעס
     public async Task AddAsync(RequestDisplayDto item) => throw new NotImplementedException("Use CreateRequestAsync instead");
@@ -94,11 +107,17 @@ public class RequestService : IRequestService
     {
         try
         {
+            Console.WriteLine($"מנסה לעדכן סטטוס לבקשה {requestId} לסטטוס: {status}");
+            
             await _requestRepository.UpdateStatusAsync(requestId, status);
+            
+            Console.WriteLine($"הסטטוס עודכן בהצלחה לסטטוס: {status}");
+            
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"שגיאה בעדכון סטטוס: {ex.Message}");
             return false;
         }
     }

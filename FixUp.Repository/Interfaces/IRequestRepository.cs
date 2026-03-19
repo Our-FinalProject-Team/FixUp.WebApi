@@ -18,5 +18,6 @@ namespace FixUp.Repository.Interfaces
         Task ReleaseRequestsByProfessionalIdAsync(int profId);
         Task UpdateStatusAsync(int id, string status);
         Task<IEnumerable<Request>> GetRequestsByProfessionalIdAsync(int proId);
+        Task<IEnumerable<Request>> GetRequestsByClientIdAsync(int clientId);
     }
 }

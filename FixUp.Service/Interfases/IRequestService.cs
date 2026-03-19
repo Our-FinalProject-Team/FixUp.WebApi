@@ -16,5 +16,7 @@ namespace FixUp.Service.Interfaces
         Task AddRequestFromDtoAsync(RequestCreateDto dto);
         Task<bool> UpdateRequestStatusAsync(int requestId, string status);
         Task<IEnumerable<RequestDisplayDto>> GetRequestsByProAsync(int proId);
+        Task<IEnumerable<RequestDisplayDto>> GetRequestsByClientIdAsync(int clientId);
+        Task<IEnumerable<RequestDisplayDto>> GetApprovedRequestsByProIdAsync(int proId);
     }
 }

@@ -38,6 +38,13 @@ namespace FixUp.Repository.Repositories
                 .Where(r => r.ProfessionalId == proId)
                 .ToListAsync();
         }
+        public async Task<IEnumerable<Request>> GetRequestsByClientIdAsync(int clientId)
+        {
+            return await _context.Requests
+                .Where(r => r.ClientId == clientId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+        }
         public async Task UpdateAsync(Request request)
         {
             // מעדכן בקשה קיימת
