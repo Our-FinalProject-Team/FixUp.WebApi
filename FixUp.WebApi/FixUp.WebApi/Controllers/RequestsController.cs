@@ -1,10 +1,8 @@
-﻿
-using FixUp.Service.Dto;
-
+﻿using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FixUp.Api.Controllers
+namespace FixUp.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -43,6 +41,14 @@ namespace FixUp.Api.Controllers
             return Ok(requests);
         }
 
+        // 3. קבלת הזמנות ממתינות לאישור עבור בעל מקצוע ספציפי
+        [HttpGet("professional/{profId}/pending")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetPendingForProfessional(int profId)
+        {
+            var requests = await _requestService.GetAvailableRequestsForMeAsync(profId);
+            return Ok(requests);
+        }
+
         // 4. קבלת העבודות שכבר שויכו לבעל המקצוע
         [HttpGet("my-jobs/{profId}")]
         public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetMyJobs(int profId)
@@ -50,6 +56,15 @@ namespace FixUp.Api.Controllers
             var requests = await _requestService.GetMyJobsAsync(profId);
             return Ok(requests);
         }
+
+        // 7. קבלת כל ההזמנות של בעל מקצוע
+        [HttpGet("professional/{profId}/all")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetAllRequestsForProfessional(int profId)
+        {
+            var requests = await _requestService.GetRequestsByProAsync(profId);
+            return Ok(requests);
+        }
+
         // 5. אישור בקשה על ידי בעל מקצוע (לקיחת העבודה)
         [HttpPut("accept/{requestId}/{profId}")]
         public async Task<ActionResult> AcceptRequest(int requestId, int profId)
@@ -64,6 +79,48 @@ namespace FixUp.Api.Controllers
             }
 
             return Ok("הבקשה שויכה בהצלחה!");
+        }
+
+        // 6. עדכון סטטוס בקשה (למשל מ'חדש' ל'בטיפול')
+        [HttpPut("{requestId}/status")]
+        public async Task<ActionResult> UpdateRequestStatus(int requestId, [FromBody] StatusUpdateDto statusDto)
+        {
+            try
+            {
+                Console.WriteLine($"מנסה לעדכן סטטוס לבקשה {requestId} לסטטוס: {statusDto.Status}");
+
+                bool success = await _requestService.UpdateRequestStatusAsync(requestId, statusDto.Status);
+
+                Console.WriteLine($"העדכון הצליח: {success}");
+
+                if (!success)
+                {
+                    return BadRequest("לא ניתן לעדכן את הסטטוס של הבקשה.");
+                }
+
+                return Ok("הסטטוס עודכן בהצלחה!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"שגיאה בעדכון סטטוס: {ex.Message}");
+                return BadRequest($"שגיאה: {ex.Message}");
+            }
+
+        }
+        // לקבלת ההיסטוריה של הלקוח
+        [HttpGet("client/{clientId}")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetByClient(int clientId)
+        {
+            var requests = await _requestService.GetRequestsByClientIdAsync(clientId);
+            return Ok(requests);
+        }
+
+        // לקבלת רק הלקוחות המאושרים של בעל המקצוע
+        [HttpGet("professional/{proId}/approved")]
+        public async Task<ActionResult<IEnumerable<RequestDisplayDto>>> GetApprovedByPro(int proId)
+        {
+            var requests = await _requestService.GetApprovedRequestsByProIdAsync(proId);
+            return Ok(requests);
         }
     }
 }
