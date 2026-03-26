@@ -119,7 +119,7 @@ namespace FixUp.Service.Services
                 return null;
 
             var clientDto = _mapper.Map<ClientDto>(client);
-            var token = _authService.GenerateJwtToken(client.Email, "Client");
+            var token = _authService.GenerateJwtToken(client.Email, "Client",client.Id);
 
             return new AuthResponseDto { User = clientDto, Token = token, Role = "Client" };
         }

@@ -55,6 +55,25 @@ namespace FixUp.WebApi.Controllers
             return NoContent();
         }
 
+        [Authorize] // כל משתמש מחובר עם טוקן תקין יכול לגשת
+        [HttpGet("me")]
+        public async Task<ActionResult<ProfessionalDto>> GetMyProfile()
+        {
+            // שליפת האימייל מתוך ה-Claims שבטוקן
+            var id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(id))
+                return Unauthorized("לא נמצא זיהוי משתמש בטוקן");
+
+            // שליפת הנתונים מהשירות לפי האימייל
+            var prof = await _profService.GetByIdAsync(int.Parse(id));
+
+            if (prof == null)
+                return NotFound("המשתמש לא נמצא במערכת");
+
+            return Ok(prof);
+        }
+
         [Authorize(Roles = "Professional")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)

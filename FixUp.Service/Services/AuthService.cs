@@ -1,11 +1,12 @@
-﻿using System;
+﻿using FixUp.Repository.Models;
+using FixUp.Service.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using FixUp.Service.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace FixUp.Service.Services
 {
@@ -18,13 +19,14 @@ namespace FixUp.Service.Services
             _config = config;
         }
 
-        public string GenerateJwtToken(string email, string role)
+        public string GenerateJwtToken(string email, string role,int id)
         {
             // יצירת רשימת ה-Claims שתצורף לטוקן
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Role, role) // הוספת התפקיד לתוך הטוקן לזיהוי במערכת
+                new Claim(ClaimTypes.Role, role) ,
+                new Claim(ClaimTypes.NameIdentifier, id.ToString()),// הוספת התפקיד לתוך הטוקן לזיהוי במערכת
             };
 
             // הגדרת מפתח ההצפנה מהקונפיגורציה

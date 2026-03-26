@@ -36,4 +36,8 @@
     <ProjectReference Include="..\..\FixUpSolution\FixUpSolution\FixUpSolution.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
 </Project>

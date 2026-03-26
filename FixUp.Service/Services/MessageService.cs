@@ -32,7 +32,9 @@ namespace FixUp.Service.Services
                 SenderId = m.SenderId,
                 SenderName = m.SenderName,
                 SenderRole = m.SenderRole,
-                CategoryId = m.CategoryId
+                CategoryId = m.CategoryId,
+                ImageUrl = m.ImageUrl
+
             });
         }
 
@@ -45,7 +47,8 @@ namespace FixUp.Service.Services
                 SenderId = item.SenderId,
                 SenderName = item.SenderName,
                 SenderRole = item.SenderRole,
-                CategoryId = item.CategoryId
+                CategoryId = item.CategoryId,
+                ImageUrl = item.ImageUrl
             };
             await _repository.AddMessageAsync(model);
         }
@@ -62,7 +65,8 @@ namespace FixUp.Service.Services
                 CreatedAt = m.CreatedAt,
                 SenderName = m.SenderName,
                 SenderRole = m.SenderRole,
-                CategoryId = m.CategoryId
+                CategoryId = m.CategoryId,
+                ImageUrl = m.ImageUrl
             });
         }
 

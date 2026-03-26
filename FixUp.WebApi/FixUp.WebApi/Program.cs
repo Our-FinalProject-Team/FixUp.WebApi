@@ -9,10 +9,41 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. הוספת שירותים בסיסיים
+// --- 1. רישום שירותים (Services Configuration) ---
+
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// הגדרת Swagger עם תמיכה ב-JWT
+builder.Services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "FixUp API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// הגדרת Authentication (אימות)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -28,72 +59,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization(); // פותר את השגיאה מהחלון השחור
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c => {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "FixUp API", Version = "v1" });
+builder.Services.AddAuthorization();
 
-    // הגדרת האבטחה - זה מה שחסר לך כדי שהטוקן יעבור!
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
-        Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
+// הגדרת SignalR
+builder.Services.AddSignalR();
 
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
-        }
-    });
-});
-// 2. הגדרת Swagger (הקווים האדומים ייעלמו אחרי ההתקנה)
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// 3. חיבור ל-SQL (לפי הקוד שלך)
-builder.Services.AddDbContext<IContext, DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-    sqlOptions => sqlOptions.EnableRetryOnFailure())
-);
-
-
-// --- הזרקות ה-Services (התוספת החדשה) ---
-builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
-builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
-builder.Services.AddScoped<IClientService, ClientService>();
-//builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<IUserService, UserService>();
-
-// הזרקת AutoMapper - חובה כדי שהמרות יעבדו
-builder.Services.AddAutoMapper(typeof(MyMapper));
-
-
-
-// 4. רישום ה-Repositories (Dependency Injection)
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
-builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IFixUpTaskRepository, FixUpTaskRepository>();
-builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IRequestRepository, RequestRepository>();
-builder.Services.AddScoped<IRequestService, RequestService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-// הוספת מדיניות CORS
-
-// --- חלק השירותים (לפני ה-Build) ---
+// הגדרת CORS עבור SignalR ו-React
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SignalRPolicy", policy =>
@@ -101,16 +72,44 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials(); // חובה לחיבור SignalR
     });
 });
 
-builder.Services.AddSignalR();
-builder.Services.AddControllers();
+// חיבור ל-Database
+builder.Services.AddDbContext<IContext, DataContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    sqlOptions => sqlOptions.EnableRetryOnFailure())
+);
+
+// הזרקות Dependency Injection (Repositories & Services)
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IFixUpTaskRepository, FixUpTaskRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IRequestRepository, RequestRepository>();
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+
+
+builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
+builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRequestService, RequestService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(MyMapper));
+
+// --- 2. בניית האפליקציה (Build) ---
 
 var app = builder.Build();
-app.UseCors("SignalRPolicy");
-// 5. הגדרת ה-Pipeline (סדר הפעולות קריטי!)
+
+// --- 3. הגדרת ה-Pipeline (הסדר קריטי!) ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -118,23 +117,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthorization();
-
-app.MapControllers(); // מחבר את ה-Routes של הקונטרולרים
-
-app.Run(); // הרצה אחת בלבד בסוף
-
-// הוספת UseRouting - חשוב מאוד כדי שה-CORS ידע לאן הבקשה הולכת
+app.UseStaticFiles();
+// חובה לפי הסדר הזה:
 app.UseRouting();
 
-// ה-CORS חייב לבוא אחרי ה-Routing ולפני ה-Authorization
 app.UseCors("SignalRPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-// חיבור ה-Hubs והקונטרולרים
-app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
+// מיפוי נתיבים
 app.MapControllers();
+app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub"); // הנתיב המדויק ל-SignalR
 
+// הרצה - פקודה אחת בלבד בסוף
 app.Run();
 

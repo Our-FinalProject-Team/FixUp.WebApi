@@ -11,6 +11,6 @@ namespace FixUp.Service.Interfaces
     public interface IAuthService
     {
         // הפונקציה מקבלת אימייל ותפקיד (Role) ומחזירה מחרוזת של טוקן חתום
-        string GenerateJwtToken(string email, string role);
+        string GenerateJwtToken(string email, string role,int id);
     }
 }

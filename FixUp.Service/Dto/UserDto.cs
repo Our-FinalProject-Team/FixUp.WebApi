@@ -12,7 +12,7 @@ namespace FixUp.Service.Dto
         public string FullName { get; set; }
 
         [Required(ErrorMessage = "אימייל הוא שדה חובה")]
-        [EmailAddress(ErrorMessage = "פורמט אימייל לא תקין")]
+        [EmailAddress(ErrorMessage = "פורמט אימייל לא תקין")]   
         public string Email { get; set; }
 
         [Required(ErrorMessage = "מספר טלפון הוא חובה")]

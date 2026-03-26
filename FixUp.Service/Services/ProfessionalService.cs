@@ -49,7 +49,7 @@ namespace FixUp.Service.Services
             }
 
             var profDto = _mapper.Map<ProfessionalDto>(prof);
-            var token = _authService.GenerateJwtToken(prof.Email, "Professional");
+            var token = _authService.GenerateJwtToken(prof.Email, "Professional", prof.Id);
 
             return new AuthResponseDto
             {

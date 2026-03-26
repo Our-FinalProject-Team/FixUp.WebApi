@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FixUp.Service.Interfaces;
 using FixUp.Service.DTOs;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -44,6 +47,53 @@ namespace FixUp.WebAPI.Controllers
 
             await _messageService.AddAsync(messageDto);
             return Ok(new { message = "ההודעה נשלחה בהצלחה" });
+        }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetChatHistory()
+        {
+            // שליפת כל ההודעות מהשירות שמתחבר ל-SQL
+            var messages = await _messageService.GetAllAsync();
+            return Ok(messages);
+        }
+
+        // העלאת תמונה לשרת
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("לא נבחר קובץ.");
+            }
+
+            try
+            {
+                // יצירת נתיב לתיקיית wwwroot/uploads
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                // יצירת שם ייחודי לקובץ
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                // שמירת הקובץ
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // החזרת הכתובת היחסית של הקובץ
+                var fileUrl = $"/uploads/{fileName}";
+                return Ok(new { url = fileUrl });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"שגיאה בהעלאת הקובץ: {ex.Message}");
+            }
         }
     }
 }
