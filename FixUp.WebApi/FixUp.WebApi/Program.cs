@@ -82,7 +82,15 @@ builder.Services.AddDbContext<IContext, DataContext>(options =>
     sqlOptions => sqlOptions.EnableRetryOnFailure())
 );
 
-// הזרקות Dependency Injection (Repositories & Services)
+// הזרקות (Dependency Injection)
+builder.Services.AddAutoMapper(typeof(MyMapper));
+builder.Services.AddScoped<IFixUpTaskService, FixUpTaskService>();
+builder.Services.AddScoped<IProfessionalService, ProfessionalService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRequestService, RequestService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
