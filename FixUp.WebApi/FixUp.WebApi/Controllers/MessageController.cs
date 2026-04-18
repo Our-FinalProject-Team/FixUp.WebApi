@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
-using FixUp.Service.DTOs;
+using FixUp.WebAPI.Hubs;
 using Microsoft.AspNetCore.Http;
-using System.IO;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace FixUp.WebAPI.Controllers
@@ -14,10 +16,12 @@ namespace FixUp.WebAPI.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public MessageController(IMessageService messageService)
+        public MessageController(IMessageService messageService, IHubContext<ChatHub> hubContext)
         {
             _messageService = messageService;
+            _hubContext = hubContext;
         }
 
         // שליפת כל ההודעות (לפי הממשק הכללי IService)
@@ -36,7 +40,6 @@ namespace FixUp.WebAPI.Controllers
             return Ok(messages);
         }
 
-        // שליחת הודעה חדשה
         [HttpPost("send")]
         public async Task<IActionResult> SendMessage([FromBody] MessageDTO messageDto)
         {
@@ -45,8 +48,15 @@ namespace FixUp.WebAPI.Controllers
                 return BadRequest("תוכן ההודעה לא יכול להיות ריק");
             }
 
+            // 1. שמירה ב-DB (הפעולה מחזירה void/Task אז לא שומרים במשתנה)
             await _messageService.AddAsync(messageDto);
-            return Ok(new { message = "ההודעה נשלחה בהצלחה" });
+
+            // 2. שידור ה-DTO המקורי לכולם
+            // שימי לב: ה-ID כנראה יהיה 0 כי הוא עוד לא חזר מה-DB, 
+            // אבל לצורך הצגת ההודעה בצ'אט זה יעבוד.
+            await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
+
+            return Ok(messageDto);
         }
 
         [HttpGet("history")]

@@ -38,7 +38,7 @@ namespace FixUp.Service.Services
             });
         }
 
-        public async Task AddAsync(MessageDTO item)
+        public async Task<Message> AddAsync(MessageDTO item)
         {
             var model = new Message
             {
