@@ -5,11 +5,12 @@ using FixUp.Service.Interfaces;
 using FixUp.Service.Interfases;
 using FixUp.Service.Services;
 using FixUpSolution.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
+using Mscc.GenerativeAI.Web;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +83,8 @@ builder.Services.AddDbContext<IContext, DataContext>(options =>
     sqlOptions => sqlOptions.EnableRetryOnFailure())
 );
 
+//חיבור ל-AI
+builder.Services.AddGenerativeAI(builder.Configuration.GetSection("Gemini"));
 // הזרקות (Dependency Injection)
 builder.Services.AddAutoMapper(typeof(MyMapper));
 
@@ -103,6 +106,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IAnalysisService, AnalysisService>();
 
 
 // AutoMapper

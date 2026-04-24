@@ -13,5 +13,7 @@ namespace FixUp.Service.Interfaces
     {
         // כאן אפשר להוסיף פונקציות ספציפיות לצ'אט אם צריך
         Task<IEnumerable<MessageDTO>> GetByCategoryIdAsync(int categoryId);
+
+        Task<List<MessageDTO>> GetMessagesIdAsync(string userId);
     }
 }

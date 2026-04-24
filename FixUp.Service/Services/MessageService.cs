@@ -3,7 +3,6 @@ using FixUp.Repository.Models;
 using FixUp.Repository.Repositories;
 using FixUp.Service.DTOs;
 
-
 using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
 using FixUp.Repository.Interfaces;
@@ -28,6 +27,7 @@ namespace FixUp.Service.Services
             {
                 Id = m.Id,
                 Content = m.Content,
+                ConversationId = m.ConversationId,
                 CreatedAt = m.CreatedAt,
                 SenderId = m.SenderId,
                 SenderName = m.SenderName,
@@ -38,15 +38,16 @@ namespace FixUp.Service.Services
             });
         }
 
-        public async Task<Message> AddAsync(MessageDTO item)
+        public async Task AddAsync(MessageDTO item)
         {
             var model = new Message
             {
                 Content = item.Content,
+                ConversationId = item.ConversationId,
                 CreatedAt = DateTime.Now,
                 SenderId = item.SenderId,
                 SenderName = item.SenderName,
-                SenderRole = item.SenderRole,
+                SenderRole = item.SenderRole ??= "Client",
                 CategoryId = item.CategoryId,
                 ImageUrl = item.ImageUrl
             };
@@ -61,6 +62,7 @@ namespace FixUp.Service.Services
             return messages.Select(m => new MessageDTO
             {
                 Id = m.Id,
+                ConversationId = m.ConversationId,
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
                 SenderName = m.SenderName,
@@ -69,7 +71,25 @@ namespace FixUp.Service.Services
                 ImageUrl = m.ImageUrl
             });
         }
+        public async Task<List<MessageDTO>> GetMessagesIdAsync(string userId)
+        {
+            // 1. Call the repository (The repository handles the SQL/_context)
+            var messages = await _repository.GetMessagesByConversationIdAsync(userId);
 
+            // 2. Convert the models to DTOs
+            return messages.Select(m => new MessageDTO
+            {
+                Id = m.Id,
+                ConversationId = m.ConversationId,
+                Content = m.Content,
+                SenderId = m.SenderId,
+                SenderRole = m.SenderRole,
+                CreatedAt = m.CreatedAt,
+                ImageUrl = m.ImageUrl,
+                CategoryId = m.CategoryId,
+            }).ToList();
+        }  
+        
         // מימוש שאר הפונקציות של IService (אפשר להשאיר ריק או לזרוק NotImplEx)
         public Task<MessageDTO> GetByIdAsync(int id) => throw new NotImplementedException();
         public Task UpdateAsync(int id, MessageDTO item) => throw new NotImplementedException();

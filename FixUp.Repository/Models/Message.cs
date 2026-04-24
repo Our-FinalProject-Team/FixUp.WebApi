@@ -14,11 +14,12 @@ namespace YourProjectName.Models
             public int Id { get; set; }
             public string? Content { get; set; } = string.Empty;
             public DateTime CreatedAt { get; set; } = DateTime.Now;
+            public string ConversationId { get; set; } 
             public int SenderId { get; set; }
             public string SenderName { get; set; }
-            public string SenderRole { get; set; } // "pro" או "client"
+            public string SenderRole { get; set; } 
             public int CategoryId { get; set; }
-            public string? ImageUrl { get; set; } // סימן שאלה כי לא חובה להעלות תמונה בכל הודעה
+            public string? ImageUrl { get; set; } 
         }
     }
 

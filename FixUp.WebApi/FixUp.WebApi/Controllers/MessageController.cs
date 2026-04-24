@@ -1,13 +1,22 @@
-﻿using FixUp.Service.DTOs;
+﻿using Azure.Core;
+using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
+using FixUp.Service.Interfases;
+using FixUp.Service.Services;
 using FixUp.WebAPI.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Mscc.GenerativeAI;
+using Mscc.GenerativeAI.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FixUp.WebAPI.Controllers
 {
@@ -16,12 +25,16 @@ namespace FixUp.WebAPI.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IAnalysisService _analysisService;
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly IConfiguration _config;
 
-        public MessageController(IMessageService messageService, IHubContext<ChatHub> hubContext)
+        public MessageController(IMessageService messageService, IHubContext<ChatHub> hubContext, IConfiguration config, IAnalysisService analysisService)
         {
             _messageService = messageService;
             _hubContext = hubContext;
+            _config = config;
+            _analysisService = analysisService;
         }
 
         // שליפת כל ההודעות (לפי הממשק הכללי IService)
@@ -40,32 +53,113 @@ namespace FixUp.WebAPI.Controllers
             return Ok(messages);
         }
 
+        //[HttpPost("send")]
+        //[Consumes("multipart/form-data")]
+        //public async Task<IActionResult> SendMessage([FromForm] IFormFile? image,[FromForm] MessageDTO messageDto)
+        //{
+        //    if (messageDto == null || string.IsNullOrEmpty(messageDto.Content))
+        //    {
+        //        return BadRequest("תוכן ההודעה לא יכול להיות ריק");
+        //    }
+
+        //    Console.WriteLine("DTO ConversationId: " + messageDto.ConversationId);
+
+        //    //ניתוח התמונה
+        //    var categoryResult = await _analysisService.AnalyzeRequestAsync(image, messageDto.Content);
+        //    if (categoryResult != null)
+        //    {
+        //        messageDto.CategoryId = categoryResult.CategoryId;
+        //        messageDto.SenderRole = categoryResult.CategoryName;
+        //    }
+
+        //    var convId = Request.Form["ConversationId"].ToString();
+        //    if(convId == null)
+        //        Console.WriteLine("null");
+        //    messageDto.ConversationId = convId;
+
+        //    // 1. שמירה ב-DB (הפעולה מחזירה void/Task אז לא שומרים במשתנה)
+        //    await _messageService.AddAsync(messageDto);
+
+
+        //    await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
+
+        //    return Ok(new { message = messageDto, analysis = categoryResult });
+        //}
         [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] MessageDTO messageDto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> SendMessage()
         {
-            if (messageDto == null || string.IsNullOrEmpty(messageDto.Content))
+            var form = Request.Form;
+
+            // 🔍 בדיקות בסיסיות
+            var content = form["Content"].ToString();
+            if (string.IsNullOrWhiteSpace(content) && form.Files.Count == 0)
             {
                 return BadRequest("תוכן ההודעה לא יכול להיות ריק");
             }
 
-            // 1. שמירה ב-DB (הפעולה מחזירה void/Task אז לא שומרים במשתנה)
+            // 🔥 בניית DTO ידנית (עוקף את כל בעיות הביינדינג)
+            var messageDto = new MessageDTO
+            {
+                Content = content,
+                ConversationId = form["ConversationId"],
+                SenderName = form["SenderName"],
+                SenderRole = form["SenderRole"],
+                ImageUrl = null,
+                CreatedAt = DateTime.Now
+            };
+
+            // המרות מספרים (עם הגנה מקריסות)
+            if (int.TryParse(form["SenderId"], out int senderId))
+                messageDto.SenderId = senderId;
+
+            if (int.TryParse(form["CategoryId"], out int categoryId))
+                messageDto.CategoryId = categoryId;
+
+            // 📎 קובץ (אם קיים)
+            var image = form.Files.FirstOrDefault();
+
+            
+
+            // 🧠 ניתוח (אם יש לך שירות כזה)
+            var categoryResult = await _analysisService.AnalyzeRequestAsync(image, messageDto.Content);
+            if (categoryResult != null)
+            {
+                messageDto.CategoryId = categoryResult.CategoryId;
+            }
+
+            // 💾 שמירה
             await _messageService.AddAsync(messageDto);
 
-            // 2. שידור ה-DTO המקורי לכולם
-            // שימי לב: ה-ID כנראה יהיה 0 כי הוא עוד לא חזר מה-DB, 
-            // אבל לצורך הצגת ההודעה בצ'אט זה יעבוד.
+            // 📡 שידור
             await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
 
-            return Ok(messageDto);
+            return Ok(new { message = messageDto, analysis = categoryResult });
         }
 
-        [HttpGet("history")]
-        public async Task<IActionResult> GetChatHistory()
+        [Authorize]
+        [HttpGet("history/{conversationId}")]
+        public async Task<IActionResult> GetChatHistory(string conversationId)
         {
-            // שליפת כל ההודעות מהשירות שמתחבר ל-SQL
-            var messages = await _messageService.GetAllAsync();
-            return Ok(messages);
+            var history = await _messageService.GetMessagesIdAsync(conversationId);
+
+            return Ok(history);
         }
+
+
+        [HttpPost("analyze")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Analyze(IFormFile? image, [FromForm] string prompt)
+        {
+            if (string.IsNullOrEmpty(prompt))
+                return BadRequest("Missing data");
+
+            // שורה אחת שמפעילה את כל הקסם
+            var result = await _analysisService.AnalyzeRequestAsync(image, prompt);
+
+            return Ok(result);
+        }
+
 
         // העלאת תמונה לשרת
         [HttpPost("upload")]

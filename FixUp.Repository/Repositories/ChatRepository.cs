@@ -54,5 +54,13 @@ namespace FixUp.Repository.Repositories
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<Message>> GetMessagesByConversationIdAsync(string conversationId)
+        {
+            return await _context.Messages
+                .Where(m => m.ConversationId == conversationId)
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

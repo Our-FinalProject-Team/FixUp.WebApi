@@ -19,5 +19,8 @@ namespace FixUp.Repository.Interfaces
         Task<IEnumerable<Message>> GetAllMessagesAsync();
         Task<IEnumerable<Message>> GetMessagesByCategoryAsync(int categoryId);
         Task AddMessageAsync(Message message);
+
+        Task<IEnumerable<Message>> GetMessagesByConversationIdAsync(string Id);
+
     }
 }
