@@ -13,7 +13,8 @@ namespace FixUp.Service.Services
             // מיפוי יוזר (כולל קליינט ופרופשיונל אם יצרת להם DTO נפרד)
             CreateMap<User, UserDto>().ReverseMap();
             CreateMap<Client, ClientDto>().ReverseMap();
-            CreateMap<Professional, ProfessionalDto>().ReverseMap();
+            CreateMap<Professional, ProfessionalDto>().ReverseMap().ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id)) // מיפוי שדות קיימים
+           .IgnoreAllSourcePropertiesWithAnInaccessibleSetter(); ; 
 
             // מיפוי קטגוריות
             CreateMap<Category,CategoryDTO>() .ReverseMap();

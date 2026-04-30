@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using FixUp.Service.Dto;
 using FixUp.Service.DTOs;
 using FixUp.Service.Interfaces;
 using FixUp.Service.Interfases;
@@ -45,7 +46,6 @@ namespace FixUp.WebAPI.Controllers
             return Ok(messages);
         }
 
-        // שליפת היסטוריית הודעות לפי קטגוריה (פורום ספציפי)
         [HttpGet("category/{categoryId}")]
         public async Task<ActionResult<IEnumerable<MessageDTO>>> GetByCategoryId(int categoryId)
         {
@@ -53,88 +53,88 @@ namespace FixUp.WebAPI.Controllers
             return Ok(messages);
         }
 
-        //[HttpPost("send")]
-        //[Consumes("multipart/form-data")]
-        //public async Task<IActionResult> SendMessage([FromForm] IFormFile? image,[FromForm] MessageDTO messageDto)
-        //{
-        //    if (messageDto == null || string.IsNullOrEmpty(messageDto.Content))
-        //    {
-        //        return BadRequest("תוכן ההודעה לא יכול להיות ריק");
-        //    }
 
-        //    Console.WriteLine("DTO ConversationId: " + messageDto.ConversationId);
-
-        //    //ניתוח התמונה
-        //    var categoryResult = await _analysisService.AnalyzeRequestAsync(image, messageDto.Content);
-        //    if (categoryResult != null)
-        //    {
-        //        messageDto.CategoryId = categoryResult.CategoryId;
-        //        messageDto.SenderRole = categoryResult.CategoryName;
-        //    }
-
-        //    var convId = Request.Form["ConversationId"].ToString();
-        //    if(convId == null)
-        //        Console.WriteLine("null");
-        //    messageDto.ConversationId = convId;
-
-        //    // 1. שמירה ב-DB (הפעולה מחזירה void/Task אז לא שומרים במשתנה)
-        //    await _messageService.AddAsync(messageDto);
-
-
-        //    await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
-
-        //    return Ok(new { message = messageDto, analysis = categoryResult });
-        //}
         [HttpPost("send")]
         [Consumes("multipart/form-data")]
+
         public async Task<IActionResult> SendMessage()
         {
             var form = Request.Form;
-
-            // 🔍 בדיקות בסיסיות
             var content = form["Content"].ToString();
-            if (string.IsNullOrWhiteSpace(content) && form.Files.Count == 0)
-            {
-                return BadRequest("תוכן ההודעה לא יכול להיות ריק");
-            }
 
-            // 🔥 בניית DTO ידנית (עוקף את כל בעיות הביינדינג)
+            if (string.IsNullOrWhiteSpace(content) && form.Files.Count == 0)
+                return BadRequest("תוכן ההודעה לא יכול להיות ריק");
+
             var messageDto = new MessageDTO
             {
                 Content = content,
                 ConversationId = form["ConversationId"],
                 SenderName = form["SenderName"],
                 SenderRole = form["SenderRole"],
-                ImageUrl = null,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                CategoryId = 0 // אתחול כברירת מחדל ל-0
             };
 
-            // המרות מספרים (עם הגנה מקריסות)
-            if (int.TryParse(form["SenderId"], out int senderId))
-                messageDto.SenderId = senderId;
+            if (int.TryParse(form["SenderId"], out int sId)) messageDto.SenderId = sId;
 
-            if (int.TryParse(form["CategoryId"], out int categoryId))
-                messageDto.CategoryId = categoryId;
-
-            // 📎 קובץ (אם קיים)
+            // אם הגיע קטגוריה מהטופס (למשל מצד בעל המקצוע), נשמור אותה
+            //if (int.TryParse(form["CategoryId"], out int cId)) messageDto.CategoryId = cId;
             var image = form.Files.FirstOrDefault();
 
-            
-
-            // 🧠 ניתוח (אם יש לך שירות כזה)
-            var categoryResult = await _analysisService.AnalyzeRequestAsync(image, messageDto.Content);
-            if (categoryResult != null)
+            // 🧠 ניתוח AI - רק אם ההודעה ארוכה מספיק או שיש תמונה
+            if (image != null || (!string.IsNullOrWhiteSpace(content) && content.Length > 10))
             {
-                messageDto.CategoryId = categoryResult.CategoryId;
+                try
+                {
+                    var categoryResult = await _analysisService.AnalyzeRequestAsync(image, messageDto.Content);
+
+                    // בדיקה קפדנית: רק אם ה-AI החזיר מספר חיובי שאינו "קוד אי-זיהוי"
+                    if (categoryResult != null && categoryResult.CategoryId > 0)
+                    {
+                        messageDto.CategoryId = categoryResult.CategoryId;
+                    }
+                    else
+                    {
+                        messageDto.CategoryId = 0; // וידוא שזה נשאר 0 אם אין זיהוי
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ AI Analysis failed: {ex.Message}");
+                    messageDto.CategoryId = 0;
+                }
             }
 
-            // 💾 שמירה
+            // 💾 שמירה בבסיס הנתונים
             await _messageService.AddAsync(messageDto);
 
-            // 📡 שידור
-            await _hubContext.Clients.All.SendAsync("ReceiveMessage", messageDto);
+            // 📡 שידור ל-SignalR
+            try
+            {
+                // אם יש קטגוריה תקינה - שידור כעבודה חדשה
+                if (messageDto.CategoryId > 0)
+                {
+                    string groupName = $"Category_{messageDto.CategoryId}";
+                    await _hubContext.Clients.Group(groupName).SendAsync("ReceiveNewJob", new
+                    {
+                        id = messageDto.Id,
+                        conversationId = messageDto.ConversationId,
+                        content = messageDto.Content,
+                        senderName = messageDto.SenderName,
+                        categoryId = messageDto.CategoryId,
+                        createdAt = messageDto.CreatedAt
+                    });
+                }
 
-            return Ok(new { message = messageDto, analysis = categoryResult });
+                // תמיד נשדר לשיחה הספציפית כדי שהלקוח והצד השני יראו את ההודעה במסך הצ'אט
+                await _hubContext.Clients.Group(messageDto.ConversationId).SendAsync("ReceiveMessage", messageDto);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"🔴 SignalR broadcast failed: {ex.Message}");
+            }
+
+            return Ok(new { success = true, message = messageDto });
         }
 
         [Authorize]

@@ -83,6 +83,7 @@ namespace FixUp.Service.Services
                 ConversationId = m.ConversationId,
                 Content = m.Content,
                 SenderId = m.SenderId,
+                SenderName= m.SenderName,
                 SenderRole = m.SenderRole,
                 CreatedAt = m.CreatedAt,
                 ImageUrl = m.ImageUrl,

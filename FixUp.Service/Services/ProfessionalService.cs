@@ -106,9 +106,10 @@ namespace FixUp.Service.Services
 
         public async Task RegisterProfessionalAsync(ProfessionalDto profDto, string password)
         {
-            ValidateDto(profDto); // בדיקת השדות ב-DTO
+            // בדיקת השדות ב-DTO (כאן ה-CategoryId מחושב אוטומטית ברגע שניגשים ל-Specialty)
+            ValidateDto(profDto);
 
-            // בדיקת סיסמה ידנית (כי היא לא בתוך ה-DTO)
+            // בדיקת סיסמה
             if (string.IsNullOrWhiteSpace(password) || password.Length < 6 || !password.Any(char.IsDigit) || !password.Any(char.IsLetter))
                 throw new Exception("הסיסמה חייבת להיות באורך 6 תווים לפחות ולשלב אותיות ומספרים");
 
@@ -130,9 +131,12 @@ namespace FixUp.Service.Services
             }
             else
             {
+                // המיפוי כאן מעתיק את Specialty. 
+                // מכיוון ש-CategoryId ב-DTO תלוי ב-Specialty, הוא תמיד יהיה נכון בזיכרון.
                 var newProf = _mapper.Map<Professional>(profDto);
                 newProf.PasswordHash = passwordHash;
                 newProf.IsDeleted = false;
+
                 await _professionalRepository.AddProfessionalAsync(newProf);
             }
         }
