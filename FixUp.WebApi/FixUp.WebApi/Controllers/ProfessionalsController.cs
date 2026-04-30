@@ -1,4 +1,6 @@
 ﻿
+using AutoMapper;
+using FixUp.Repository.Models;
 using FixUp.Service.Dto;
 using FixUp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -11,10 +13,12 @@ namespace FixUp.WebApi.Controllers
     public class ProfessionalsController : ControllerBase
     {
         private readonly IProfessionalService _profService;
+        private readonly IMapper _mapper;
 
-        public ProfessionalsController(IProfessionalService profService)
+        public ProfessionalsController(IProfessionalService profService, IMapper mapper)
         {
             _profService = profService;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -70,8 +74,9 @@ namespace FixUp.WebApi.Controllers
 
             if (prof == null)
                 return NotFound("המשתמש לא נמצא במערכת");
+            var dto = _mapper.Map<ProfessionalDto>(prof); // ממפה ל-DTO
 
-            return Ok(prof);
+            return Ok(dto);
         }
 
         [Authorize(Roles = "Professional")]
