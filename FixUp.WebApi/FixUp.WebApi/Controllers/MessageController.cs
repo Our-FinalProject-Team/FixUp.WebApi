@@ -163,9 +163,9 @@ namespace FixUp.WebAPI.Controllers
 
         // העלאת תמונה לשרת
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadImage(IFormFile file)
+        public async Task<IActionResult> UploadImage([FromForm] IFormFile image)
         {
-            if (file == null || file.Length == 0)
+            if (image == null || image.Length == 0)
             {
                 return BadRequest("לא נבחר קובץ.");
             }
@@ -181,13 +181,13 @@ namespace FixUp.WebAPI.Controllers
                 }
 
                 // יצירת שם ייחודי לקובץ
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
                 // שמירת הקובץ
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await file.CopyToAsync(stream);
+                    await image.CopyToAsync(stream);
                 }
 
                 // החזרת הכתובת היחסית של הקובץ
