@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace FixUp.Service.Interfases
 {
-    internal interface IReviewService
+    public interface IEmailService
     {
+        Task SendEmailAsync(string toemail,string subject,string body);
     }
 }

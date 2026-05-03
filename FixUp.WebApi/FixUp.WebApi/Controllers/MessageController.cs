@@ -163,7 +163,7 @@ namespace FixUp.WebAPI.Controllers
 
         // העלאת תמונה לשרת
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadImage([FromForm] IFormFile image)
+        public async Task<IActionResult> UploadImage( IFormFile image)
         {
             if (image == null || image.Length == 0)
             {

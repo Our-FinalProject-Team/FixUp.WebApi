@@ -11,9 +11,8 @@ namespace FixUp.Service.Dto
         public string Status { get; set; }       // "חדש", "בטיפול", "הסתיים"
         public DateTime CreatedAt { get; set; }  // מתי נוצרה הבקשה
         public DateTime ScheduledDate { get; set; } // מתי בעל המקצוע אמור להגיע
-
-        // שדות תצוגה חשובים (נשלפים מהטבלאות האחרות ב-Service)
         public string ClientName { get; set; }
         public string ProfessionalName { get; set; }
+        public string? ApprovalToken { get; set; } // הקוד
     }
 }

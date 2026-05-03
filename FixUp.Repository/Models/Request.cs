@@ -11,6 +11,8 @@ public class Request
     public string Description { get; set; } // הערות
     public string Status { get; set; } = "חדש"; // סטטוס ראשוני
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    public string? ApprovalToken { get; set; }
 }
 
 

@@ -14,7 +14,7 @@ namespace FixUp.Service.Services
         private readonly IRequestRepository _requestRepository;
         private readonly IAuthService _authService;
         private readonly IMapper _mapper;
-
+        private readonly IProfessionalService _professionalService;
         public ProfessionalService(
             IProfessionalRepository professionalRepository,
             IRequestRepository requestRepository,
@@ -168,6 +168,18 @@ namespace FixUp.Service.Services
                 prof.PasswordHash = originalHash;
                 await _professionalRepository.UpdateProfessionalAsync(prof);
             }
+        }
+
+        public async Task<ProfessionalDto> GetByEmailAsync(string email)
+        {
+            // שליפה מהמסד לפי אימייל (נניח שיש לך פונקציה כזו ב-Repository)
+            var allProfessionals = await _professionalService.GetAllAsync();
+            var professional = allProfessionals.FirstOrDefault(p => p.Email == email);
+
+            if (professional == null) return null;
+
+            // המרה ל-DTO והחזרה
+            return _mapper.Map<ProfessionalDto>(professional);
         }
     }
 }

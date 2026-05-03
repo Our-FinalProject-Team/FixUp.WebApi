@@ -107,7 +107,7 @@ builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
-
+builder.Services.AddScoped<IEmailService,EmailService>();
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(MyMapper));
@@ -136,7 +136,7 @@ app.UseAuthorization();
 
 // מיפוי נתיבים
 app.MapControllers();
-app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub"); // הנתיב המדויק ל-SignalR
+app.MapHub<FixUp.WebAPI.Hubs.ChatHub>("/chatHub");
 
 // הרצה - פקודה אחת בלבד בסוף
 app.Run();

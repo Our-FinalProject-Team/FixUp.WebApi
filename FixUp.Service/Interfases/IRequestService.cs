@@ -7,7 +7,6 @@ namespace FixUp.Service.Interfaces
 {
     public interface IRequestService : IService<RequestDisplayDto>
     {
-        // זו הפונקציה שהקונטרולר יקרא לה
         Task<RequestDisplayDto> CreateRequestAsync(RequestCreateDto dto);
 
         Task<IEnumerable<RequestDisplayDto>> GetAvailableRequestsForMeAsync(int profId);
@@ -18,5 +17,7 @@ namespace FixUp.Service.Interfaces
         Task<IEnumerable<RequestDisplayDto>> GetRequestsByProAsync(int proId);
         Task<IEnumerable<RequestDisplayDto>> GetRequestsByClientIdAsync(int clientId);
         Task<IEnumerable<RequestDisplayDto>> GetApprovedRequestsByProIdAsync(int proId);
+
+
     }
 }

@@ -22,6 +22,8 @@ namespace FixUp.Service.Dto
     {
         public int ClientId { get; set; } // המזהה של הלקוח ששולח
         public int ProfessionalId { get; set; } // המזהה של בעל המקצוע
+        public string CustomerEmail { get; set; } // מייל של לקוח
+        public string CustomerName { get; set; } // שם של לקוח
         public int CategoryId { get; set; } // המזהה של הקטגוריה
         public string Subject { get; set; } // "תיקון מזגן"
         public string Description { get; set; } // "המזגן מוציא אוויר חם"
