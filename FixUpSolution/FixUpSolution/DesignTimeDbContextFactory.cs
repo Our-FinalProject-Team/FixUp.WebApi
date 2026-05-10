@@ -1,11 +1,8 @@
 ﻿using FixUpSolution.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace FixUpSolution
 {
@@ -13,8 +10,19 @@ namespace FixUpSolution
     {
         public DataContext CreateDbContext(string[] args)
         {
+            // 1. בניית מגדיר הקונפיגורציה - קורא את הקובץ appsettings.json
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.Development.json", optional: true) // אופציונלי לפיתוח
+                .Build();
+
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-            optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=FixUpDB;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
+
+            // 2. משיכת מחרוזת החיבור מתוך הקונפיגורציה
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            optionsBuilder.UseSqlServer(connectionString);
 
             return new DataContext(optionsBuilder.Options);
         }
