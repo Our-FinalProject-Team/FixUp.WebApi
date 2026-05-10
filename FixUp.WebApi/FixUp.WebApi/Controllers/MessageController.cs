@@ -65,6 +65,8 @@ namespace FixUp.WebAPI.Controllers
             if (string.IsNullOrWhiteSpace(content) && form.Files.Count == 0)
                 return BadRequest("תוכן ההודעה לא יכול להיות ריק");
 
+           
+
             var messageDto = new MessageDTO
             {
                 Content = content,
@@ -75,11 +77,17 @@ namespace FixUp.WebAPI.Controllers
                 CategoryId = 0 // אתחול כברירת מחדל ל-0
             };
 
+            var image = form.Files.FirstOrDefault();
+
+            if (image != null)
+            {
+                messageDto.ImageUrl = await SaveImageAsync(image);
+            }
+
             if (int.TryParse(form["SenderId"], out int sId)) messageDto.SenderId = sId;
 
             // אם הגיע קטגוריה מהטופס (למשל מצד בעל המקצוע), נשמור אותה
             //if (int.TryParse(form["CategoryId"], out int cId)) messageDto.CategoryId = cId;
-            var image = form.Files.FirstOrDefault();
 
             // 🧠 ניתוח AI - רק אם ההודעה ארוכה מספיק או שיש תמונה
             if (image != null || (!string.IsNullOrWhiteSpace(content) && content.Length > 10))
@@ -161,43 +169,59 @@ namespace FixUp.WebAPI.Controllers
         }
 
 
-        // העלאת תמונה לשרת
-        [HttpPost("upload")]
-        public async Task<IActionResult> UploadImage( IFormFile image)
+        private async Task<string> SaveImageAsync(IFormFile image)
         {
-            if (image == null || image.Length == 0)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                return BadRequest("לא נבחר קובץ.");
+                await image.CopyToAsync(stream);
             }
 
-            try
-            {
-                // יצירת נתיב לתיקיית wwwroot/uploads
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
-                // יצירת שם ייחודי לקובץ
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
-
-                // שמירת הקובץ
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(stream);
-                }
-
-                // החזרת הכתובת היחסית של הקובץ
-                var fileUrl = $"/uploads/{fileName}";
-                return Ok(new { url = fileUrl });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"שגיאה בהעלאת הקובץ: {ex.Message}");
-            }
+            return $"/uploads/{fileName}";
         }
+
+        //// העלאת תמונה לשרת
+        //[HttpPost("upload")]
+        //public async Task<IActionResult> UploadImage(IFormFile image)
+        //{
+        //    if (image == null || image.Length == 0)
+        //    {
+        //        return BadRequest("לא נבחר קובץ.");
+        //    }
+
+        //    try
+        //    {
+        //        // יצירת נתיב לתיקיית wwwroot/uploads
+        //        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+        //        if (!Directory.Exists(uploadsFolder))
+        //        {
+        //            Directory.CreateDirectory(uploadsFolder);
+        //        }
+
+        //        // יצירת שם ייחודי לקובץ
+        //        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+        //        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        //        // שמירת הקובץ
+        //        using (var stream = new FileStream(filePath, FileMode.Create))
+        //        {
+        //            await image.CopyToAsync(stream);
+        //        }
+
+        //        // החזרת הכתובת היחסית של הקובץ
+        //        var fileUrl = $"/uploads/{fileName}";
+        //        return Ok(new { url = fileUrl });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"שגיאה בהעלאת הקובץ: {ex.Message}");
+        //    }
+        //}
     }
 }
