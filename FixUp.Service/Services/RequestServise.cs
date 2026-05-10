@@ -160,10 +160,11 @@ public class RequestService : IRequestService
                         </div>
                     </div>";
 
-                await _emailService.SendEmailAsync("s0556748553@gmail.com", "הצעת עבודה חדשה!", body_prof);
-                //await _emailService.SendEmailAsync(prof.Email, "הצעת עבודה חדשה!", body_prof);
-                // }           
-    
+        var profEmail = await _professionalRepository.GetProfessionalByIdAsync(dto.ProfessionalId);
+        await _emailService.SendEmailAsync(profEmail.Email, "הצעת עבודה חדשה!", body_prof);
+        //await _emailService.SendEmailAsync(prof.Email, "הצעת עבודה חדשה!", body_prof);
+        // }           
+
     }
 
     //public async Task<IEnumerable<RequestDisplayDto>> GetMyJobsAsync(int profId)
